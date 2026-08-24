@@ -32,6 +32,10 @@ export async function GET(
     return NextResponse.redirect(authUrl);
   } catch (error: any) {
     console.error('OAuth authorization init error:', error);
-    return NextResponse.json({ error: error.message || 'OAuth init error' }, { status: 500 });
+    const urlString = req.url || 'http://localhost:3000';
+    const redirectUrl = new URL('/social-accounts', urlString);
+    redirectUrl.searchParams.set('error', error.message || 'OAuth authorization initialization failed');
+    redirectUrl.searchParams.set('platform', params?.platform || '');
+    return NextResponse.redirect(redirectUrl);
   }
 }

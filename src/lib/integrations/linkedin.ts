@@ -47,10 +47,13 @@ export class LinkedInIntegration extends BaseSocialIntegration {
    * Generates official LinkedIn OAuth 2.0 authorization URL
    */
   getAuthorizationUrl(state: string): string {
-    const clientId = this.getClientId() || 'growthpilot_linkedin_client_id';
+    const clientId = this.getClientId();
+    if (!clientId || clientId === 'growthpilot_linkedin_client_id' || clientId.includes('placeholder')) {
+      throw new Error('LINKEDIN_CLIENT_ID_MISSING: LINKEDIN_CLIENT_ID environment variable is missing or unconfigured.');
+    }
     const redirectUri = this.getRedirectUri();
     const scopeParam = encodeURIComponent(this.requiredScopes.join(' '));
-    return `${this.oauthBase}/authorization?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&scope=${scopeParam}`;
+    return `${this.oauthBase}/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&scope=${scopeParam}`;
   }
 
   /**
@@ -61,14 +64,8 @@ export class LinkedInIntegration extends BaseSocialIntegration {
     const clientSecret = this.getClientSecret();
     const redirectUri = this.getRedirectUri();
 
-    if (!clientId || !clientSecret || clientId.includes('demo') || clientId.includes('growthpilot')) {
-      return {
-        accessToken: `li_live_${Date.now()}_token_mock_auth`,
-        refreshToken: `li_refresh_${Date.now()}`,
-        expiresIn: 5184000, // 60 days
-        tokenType: 'Bearer',
-        scope: this.requiredScopes.join(' ')
-      };
+    if (!clientId || !clientSecret || clientId === 'growthpilot_linkedin_client_id' || clientSecret === 'growthpilot_linkedin_client_secret') {
+      throw new Error('LINKEDIN_CREDENTIALS_MISSING: LINKEDIN_CLIENT_ID or LINKEDIN_CLIENT_SECRET environment variable is missing.');
     }
 
     try {

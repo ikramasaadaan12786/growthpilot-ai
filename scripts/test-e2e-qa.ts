@@ -44,6 +44,7 @@ async function runEndToEndQA() {
   console.log('  GROWTHPILOT AI — PHASE 4: FULL END-TO-END QA AUDIT');
   console.log('================================================================\n');
 
+  process.env.LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || '78xy99201a4bc5';
   const ig = new InstagramIntegration();
   const fb = new FacebookIntegration();
   const li = new LinkedInIntegration();

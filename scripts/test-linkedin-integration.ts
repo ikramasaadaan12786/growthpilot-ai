@@ -31,6 +31,7 @@ async function runLinkedInIntegrationTests() {
   console.log('  GROWTHPILOT AI — LINKEDIN INTEGRATION TEST SUITE (PHASE 2)');
   console.log('=========================================================\n');
 
+  process.env.LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || '78xy99201a4bc5';
   const li = new LinkedInIntegration();
 
   // Test 1: OAuth URL Generation
@@ -201,6 +202,78 @@ async function runLinkedInIntegrationTests() {
     );
   } catch (err: any) {
     assert(false, 'Test 10: LinkedIn UGC Publishing Pipeline', err.message);
+  }
+
+  // Test 11: Runtime LINKEDIN_CLIENT_ID Binding & Placeholder Exclusion
+  try {
+    const originalClientId = process.env.LINKEDIN_CLIENT_ID;
+    process.env.LINKEDIN_CLIENT_ID = 'test_real_linkedin_app_id_998877';
+
+    const testUrl = li.getAuthorizationUrl('STATE_SECURE_123');
+    const parsed = new URL(testUrl);
+    const clientIdParam = parsed.searchParams.get('client_id');
+
+    const usesRealEnv = clientIdParam === 'test_real_linkedin_app_id_998877';
+    const noPlaceholder = clientIdParam !== 'growthpilot_linkedin_client_id';
+
+    // Restore env
+    process.env.LINKEDIN_CLIENT_ID = originalClientId;
+
+    assert(
+      Boolean(usesRealEnv && noPlaceholder),
+      'Test 11: Runtime LINKEDIN_CLIENT_ID Binding',
+      'Reads client_id dynamically from process.env.LINKEDIN_CLIENT_ID and eliminates hard-coded placeholders'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 11: Runtime LINKEDIN_CLIENT_ID Binding', err.message);
+  }
+
+  // Test 12: Fail-Fast Missing Client ID Validation
+  try {
+    const originalClientId = process.env.LINKEDIN_CLIENT_ID;
+    const originalAppId = process.env.LINKEDIN_APP_ID;
+    delete process.env.LINKEDIN_CLIENT_ID;
+    delete process.env.LINKEDIN_APP_ID;
+
+    let caught = false;
+    try {
+      li.getAuthorizationUrl('STATE_TEST');
+    } catch (e: any) {
+      caught = e.message.includes('LINKEDIN_CLIENT_ID_MISSING');
+    }
+
+    // Restore env
+    process.env.LINKEDIN_CLIENT_ID = originalClientId;
+    process.env.LINKEDIN_APP_ID = originalAppId;
+
+    assert(
+      caught,
+      'Test 12: Fail-Fast Missing Credentials Validation',
+      'Properly throws LINKEDIN_CLIENT_ID_MISSING when environment variable is not configured'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 12: Fail-Fast Missing Credentials Validation', err.message);
+  }
+
+  // Test 13: Production Redirect URI Resolution
+  try {
+    const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = 'https://growthpilot-ai-two.vercel.app';
+    process.env.LINKEDIN_CLIENT_ID = 'test_app_id_123';
+
+    const testUrl = li.getAuthorizationUrl('STATE_REDIRECT');
+    const parsed = new URL(testUrl);
+    const redirectParam = parsed.searchParams.get('redirect_uri');
+
+    process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+
+    assert(
+      redirectParam === 'https://growthpilot-ai-two.vercel.app/api/auth/oauth/linkedin/callback',
+      'Test 13: Production Redirect URI Resolution',
+      'Correctly routes to https://growthpilot-ai-two.vercel.app/api/auth/oauth/linkedin/callback'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 13: Production Redirect URI Resolution', err.message);
   }
 
   console.log('\n=========================================================');
