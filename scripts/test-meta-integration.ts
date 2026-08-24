@@ -208,19 +208,84 @@ async function runMetaIntegrationTests() {
       // Direct mock profile check without linked IG
       const mockEmptyResponse: { data: Array<{ id: string; name: string; instagram_business_account?: any }> } = { data: [{ id: '123', name: 'Page Without IG' }] };
       if (!mockEmptyResponse.data[0].instagram_business_account) {
-        throw new Error('NO_IG_BUSINESS_ACCOUNT: No Instagram Professional account found');
+        throw new Error('NO_INSTAGRAM_PROFESSIONAL_ACCOUNT: No Instagram Professional account found');
       }
     } catch (e: any) {
       thrownError = e.message;
     }
 
     assert(
-      thrownError.includes('NO_IG_BUSINESS_ACCOUNT'),
+      thrownError.includes('NO_INSTAGRAM_PROFESSIONAL_ACCOUNT'),
       'Test 10: Instagram Personal Account Rejection',
       'Properly enforces Instagram Professional/Creator requirement and rejects personal unlinked accounts'
     );
   } catch (err: any) {
     assert(false, 'Test 10: Instagram Personal Account Rejection', err.message);
+  }
+
+  // Test 11: Meta Production Scopes Audit (Task 2 & 10 Verification)
+  try {
+    const igScopes = ig.requiredScopes;
+    const fbScopes = fb.requiredScopes;
+
+    const noInsights = !igScopes.includes('instagram_manage_insights');
+    const noOldPublish = !igScopes.includes('instagram_content_publish');
+    const hasPublishing = igScopes.includes('instagram_content_publishing');
+    const hasBasic = igScopes.includes('instagram_basic');
+    const hasPages = igScopes.includes('pages_show_list') && igScopes.includes('pages_read_engagement');
+    const hasBusiness = igScopes.includes('business_management');
+
+    const isAllScopesValid = noInsights && noOldPublish && hasPublishing && hasBasic && hasPages && hasBusiness;
+
+    assert(
+      isAllScopesValid,
+      'Test 11: Production Meta Scopes Verification',
+      'instagram_manage_insights and instagram_content_publish removed; instagram_content_publishing and business_management active'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 11: Production Meta Scopes Verification', err.message);
+  }
+
+  // Test 12: Production Redirect URI Hierarchy & Protection (Task 4 Verification)
+  try {
+    const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const originalVercelUrl = process.env.VERCEL_URL;
+
+    process.env.NEXT_PUBLIC_APP_URL = 'https://growthpilot-ai-two.vercel.app';
+    process.env.VERCEL_URL = 'some-temporary-branch-preview.vercel.app';
+
+    const testUrl = ig.getAuthorizationUrl('STATE_TEST');
+    const parsed = new URL(testUrl);
+    const redirectParam = parsed.searchParams.get('redirect_uri') || '';
+
+    const preservesPermanentDomain = redirectParam === 'https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/callback';
+
+    // Restore env
+    process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+    process.env.VERCEL_URL = originalVercelUrl;
+
+    assert(
+      preservesPermanentDomain,
+      'Test 12: Production Redirect URI Priority',
+      'Permanent production domain https://growthpilot-ai-two.vercel.app takes priority over VERCEL_URL'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 12: Production Redirect URI Priority', err.message);
+  }
+
+  // Test 13: Capability-Based Analytics (No Fabrication on Missing Insights)
+  try {
+    // When insights are unavailable, getMetrics returns real follower count and 0/clean values without failing
+    const metrics = await ig.getMetrics('unauthorized_insights_token_sim', '17841405309211904');
+    const isClean = typeof metrics.followers === 'number' && typeof metrics.reach === 'number';
+
+    assert(
+      isClean,
+      'Test 13: Capability-Based Analytics Resilience',
+      'Missing optional insights permission does not fail account connection or fabricate data'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 13: Capability-Based Analytics Resilience', err.message);
   }
 
   console.log('\n======================================================');

@@ -11,7 +11,6 @@ export class FacebookIntegration extends BaseSocialIntegration {
     'pages_show_list',
     'pages_read_engagement',
     'pages_manage_posts',
-    'pages_read_user_content',
     'business_management'
   ];
   readonly documentationUrl = 'https://developers.facebook.com/docs/pages-api';
@@ -25,6 +24,9 @@ export class FacebookIntegration extends BaseSocialIntegration {
   }
 
   private getRedirectUri(): string {
+    if (process.env.META_REDIRECT_URI) {
+      return process.env.META_REDIRECT_URI.replace('/instagram/', '/facebook/');
+    }
     let base = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || '';
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
@@ -32,7 +34,7 @@ export class FacebookIntegration extends BaseSocialIntegration {
     if (!base) {
       base = 'http://localhost:3000';
     }
-    return process.env.META_REDIRECT_URI || `${base}/api/auth/oauth/facebook/callback`;
+    return `${base}/api/auth/oauth/facebook/callback`;
   }
 
   private readonly apiBase = 'https://graph.facebook.com/v20.0';
@@ -229,13 +231,13 @@ export class FacebookIntegration extends BaseSocialIntegration {
 
       return {
         followers,
-        growthThisMonth: Math.round(followers * 0.04),
-        growthRate: 4.2,
-        reach: reach || Math.round(followers * 2.0),
-        views: impressions || Math.round(followers * 2.8),
-        engagement: engagements || Math.round(followers * 0.06),
-        engagementRate: er || 3.8,
-        profileVisits: Math.round(followers * 0.03),
+        growthThisMonth: 0,
+        growthRate: 0,
+        reach: reach || 0,
+        views: impressions || 0,
+        engagement: engagements || 0,
+        engagementRate: er || 0,
+        profileVisits: 0,
         leadsGenerated: 0,
         growthScore: score
       };

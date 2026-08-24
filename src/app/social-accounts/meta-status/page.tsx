@@ -111,7 +111,7 @@ export default function MetaStatusPage() {
               <div className="font-bold text-white flex items-center gap-1.5">
                 <span>Instagram Content Publishing (Reels & Carousels)</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Scope: `instagram_content_publish`</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Scope: `instagram_content_publishing`</div>
             </div>
             <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
               🟢 Available
@@ -123,10 +123,10 @@ export default function MetaStatusPage() {
               <div className="font-bold text-white flex items-center gap-1.5">
                 <span>Instagram Profile & Media Insights</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Scope: `instagram_manage_insights`</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Capability: Capability-Based (Basic metrics live; advanced metrics require App Review)</div>
             </div>
-            <span className="text-[10px] bg-amber-500/10 text-amber-300 font-bold px-2 py-0.5 rounded border border-amber-500/20 shrink-0">
-              🟡 Requires App Review
+            <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
+              🟢 Active (Non-blocking)
             </span>
           </div>
 

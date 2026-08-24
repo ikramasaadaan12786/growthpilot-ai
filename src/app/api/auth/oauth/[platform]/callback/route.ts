@@ -19,13 +19,19 @@ export async function GET(
     }
 
     const platform = rawPlatform as SocialPlatform;
-    const urlString = req.url || 'http://localhost';
+    const urlString = req.url || 'http://localhost:3000';
     const url = new URL(urlString);
     const code = url.searchParams.get('code');
     const errorParam = url.searchParams.get('error');
+    const errorReason = url.searchParams.get('error_reason') || url.searchParams.get('error_description');
 
     if (errorParam || !code) {
-      return NextResponse.json({ error: errorParam || 'missing_code' });
+      const redirectUrl = new URL('/social-accounts', urlString);
+      const codeType = errorParam === 'access_denied' ? 'META_PERMISSION_DENIED' : (errorParam || 'MISSING_AUTHORIZATION_CODE');
+      redirectUrl.searchParams.set('error', codeType);
+      if (errorReason) redirectUrl.searchParams.set('details', errorReason);
+      redirectUrl.searchParams.set('platform', platform);
+      return NextResponse.redirect(redirectUrl);
     }
 
     const adapter = platformRegistry.getAdapter(platform);
@@ -162,7 +168,27 @@ export async function GET(
     console.error('OAuth callback processing error:', error);
     const urlString = req.url || 'http://localhost:3000';
     const redirectUrl = new URL('/social-accounts', urlString);
-    redirectUrl.searchParams.set('error', error.message || 'OAuth authentication failed');
+    
+    let errorCode = 'OAUTH_AUTHENTICATION_FAILED';
+    const msg = error.message || '';
+    if (msg.includes('Invalid Scopes') || msg.includes('instagram_manage_insights') || msg.includes('scope')) {
+      errorCode = 'META_INVALID_SCOPE';
+    } else if (msg.includes('redirect_uri') || msg.includes('redirect mismatch') || msg.includes('Can\'t Load URL')) {
+      errorCode = 'META_REDIRECT_MISMATCH';
+    } else if (msg.includes('permission') || msg.includes('access denied') || msg.includes('Permissions error')) {
+      errorCode = 'META_PERMISSION_DENIED';
+    } else if (msg.includes('NO_FACEBOOK_PAGE')) {
+      errorCode = 'NO_FACEBOOK_PAGE_FOUND';
+    } else if (msg.includes('NO_INSTAGRAM_PROFESSIONAL') || msg.includes('NO_IG_BUSINESS_ACCOUNT')) {
+      errorCode = 'NO_INSTAGRAM_PROFESSIONAL_ACCOUNT';
+    } else if (msg.includes('token exchange') || msg.includes('exchangeCodeForTokens')) {
+      errorCode = 'TOKEN_EXCHANGE_FAILED';
+    } else if (msg.includes('prisma') || msg.includes('database') || msg.includes('Unique constraint')) {
+      errorCode = 'DATABASE_PERSISTENCE_FAILED';
+    }
+
+    redirectUrl.searchParams.set('error', errorCode);
+    redirectUrl.searchParams.set('message', msg);
     redirectUrl.searchParams.set('platform', params?.platform || '');
     return NextResponse.redirect(redirectUrl);
   }

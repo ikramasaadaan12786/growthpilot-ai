@@ -34,15 +34,32 @@ export default function SocialAccountsPage() {
       const params = new URLSearchParams(window.location.search);
       const connected = params.get('connected');
       const err = params.get('error');
+      const details = params.get('details') || params.get('message');
+      
       if (connected) {
         setAuthBanner({
           type: 'success',
           message: `Official ${connected} account connected successfully! OAuth 2.0 tokens encrypted (AES-256-GCM).`
         });
       } else if (err) {
+        let msg = decodeURIComponent(err);
+        if (err === 'META_INVALID_SCOPE') {
+          msg = 'Meta Scope Notice: Invalid scope requested. GrowthPilot requests only approved permissions (instagram_basic, instagram_content_publishing, pages_show_list, pages_read_engagement, business_management).';
+        } else if (err === 'META_PERMISSION_DENIED') {
+          msg = 'Meta Access Denied: The login was cancelled or required permissions were declined in Facebook Login.';
+        } else if (err === 'NO_FACEBOOK_PAGE_FOUND') {
+          msg = 'No Facebook Page Found: You must administer at least one Facebook Page to connect Facebook or Instagram Professional accounts.';
+        } else if (err === 'NO_INSTAGRAM_PROFESSIONAL_ACCOUNT') {
+          msg = 'No Linked Instagram Professional Account: Please ensure your Instagram account is switched to Professional (Business or Creator) and linked to your Facebook Page in Meta Business Suite.';
+        } else if (err === 'META_REDIRECT_MISMATCH') {
+          msg = 'Meta Redirect URI Mismatch: Please confirm https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/callback is listed in Meta App Settings under Valid OAuth Redirect URIs.';
+        } else if (details) {
+          msg += `: ${decodeURIComponent(details)}`;
+        }
+
         setAuthBanner({
           type: 'error',
-          message: `Authentication Alert: ${decodeURIComponent(err)}`
+          message: msg
         });
       }
     }

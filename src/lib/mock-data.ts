@@ -33,7 +33,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 0,
     status: 'NOT_CONNECTED',
     lastSyncAt: 'Never',
-    officialScopes: ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights', 'pages_read_engagement'],
+    officialScopes: ['instagram_basic', 'instagram_content_publishing', 'pages_show_list', 'pages_read_engagement', 'business_management'],
     rateLimitUsage: { used: 0, total: 200 }
   },
   {
@@ -50,7 +50,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 0,
     status: 'NOT_CONNECTED',
     lastSyncAt: 'Never',
-    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_read_user_content'],
+    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
     rateLimitUsage: { used: 0, total: 200 }
   },
   {
@@ -104,7 +104,7 @@ export const DEMO_BENCHMARK_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 8.4,
     status: 'DEMO_CONNECTED',
     lastSyncAt: 'Just now',
-    officialScopes: ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights', 'pages_read_engagement'],
+    officialScopes: ['instagram_basic', 'instagram_content_publishing', 'pages_show_list', 'pages_read_engagement', 'business_management'],
     rateLimitUsage: { used: 42, total: 200 }
   },
   {
@@ -121,7 +121,7 @@ export const DEMO_BENCHMARK_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 4.2,
     status: 'DEMO_CONNECTED',
     lastSyncAt: '2 mins ago',
-    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_read_user_content'],
+    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
     rateLimitUsage: { used: 19, total: 200 }
   },
   {

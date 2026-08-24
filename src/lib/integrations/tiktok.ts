@@ -26,6 +26,9 @@ export class TikTokIntegration extends BaseSocialIntegration {
   }
 
   private getRedirectUri(): string {
+    if (process.env.TIKTOK_REDIRECT_URI) {
+      return process.env.TIKTOK_REDIRECT_URI;
+    }
     let base = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || '';
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
@@ -33,7 +36,7 @@ export class TikTokIntegration extends BaseSocialIntegration {
     if (!base) {
       base = 'http://localhost:3000';
     }
-    return process.env.TIKTOK_REDIRECT_URI || `${base}/api/auth/oauth/tiktok/callback`;
+    return `${base}/api/auth/oauth/tiktok/callback`;
   }
 
   private readonly oauthBase = 'https://www.tiktok.com/v2/auth/authorize';

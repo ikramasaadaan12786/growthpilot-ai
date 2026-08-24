@@ -9,10 +9,10 @@ export class InstagramIntegration extends BaseSocialIntegration {
   readonly platformName = 'Instagram Professional';
   readonly requiredScopes = [
     'instagram_basic',
-    'instagram_content_publish',
-    'instagram_manage_insights',
+    'instagram_content_publishing',
     'pages_show_list',
-    'pages_read_engagement'
+    'pages_read_engagement',
+    'business_management'
   ];
   readonly documentationUrl = 'https://developers.facebook.com/docs/instagram-platform';
 
@@ -25,6 +25,9 @@ export class InstagramIntegration extends BaseSocialIntegration {
   }
 
   private getRedirectUri(): string {
+    if (process.env.META_REDIRECT_URI) {
+      return process.env.META_REDIRECT_URI;
+    }
     let base = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || '';
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
@@ -32,7 +35,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
     if (!base) {
       base = 'http://localhost:3000';
     }
-    return process.env.META_REDIRECT_URI || `${base}/api/auth/oauth/instagram/callback`;
+    return `${base}/api/auth/oauth/instagram/callback`;
   }
 
   private readonly apiBase = 'https://graph.facebook.com/v20.0';
@@ -159,6 +162,10 @@ export class InstagramIntegration extends BaseSocialIntegration {
       }
 
       const pages = data.data || [];
+      if (pages.length === 0) {
+        throw new Error('NO_FACEBOOK_PAGE_FOUND: No Facebook Pages found under this Meta account. An administered Facebook Page is required to link an Instagram Professional account.');
+      }
+
       let igAccount: any = null;
 
       for (const page of pages) {
@@ -170,7 +177,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
 
       if (!igAccount) {
         throw new Error(
-          'NO_IG_BUSINESS_ACCOUNT: No Instagram Professional (Business or Creator) account was found linked to your Facebook Page. Please switch your Instagram account to Professional and link it to your Facebook Page.'
+          'NO_INSTAGRAM_PROFESSIONAL_ACCOUNT: No Instagram Professional (Business or Creator) account was found linked to your Facebook Page. Please switch your Instagram account to Professional and link it to your Facebook Page in Meta Business Suite settings.'
         );
       }
 
@@ -181,9 +188,9 @@ export class InstagramIntegration extends BaseSocialIntegration {
         displayName: igAccount.name || igAccount.username || 'Instagram Professional',
         avatarUrl: igAccount.profile_picture_url || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
         bio: igAccount.biography || '',
-        followersCount: igAccount.followers_count || 0,
-        followingCount: igAccount.follows_count || 0,
-        postsCount: igAccount.media_count || 0,
+        followersCount: typeof igAccount.followers_count === 'number' ? igAccount.followers_count : 0,
+        followingCount: typeof igAccount.follows_count === 'number' ? igAccount.follows_count : 0,
+        postsCount: typeof igAccount.media_count === 'number' ? igAccount.media_count : 0,
         isVerified: true
       };
     } catch (err: any) {
@@ -194,6 +201,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
 
   /**
    * Retrieves live metrics from Meta Graph API insights
+   * Capability-based: Never fails account connection if optional insights permission is not granted
    */
   async getMetrics(accessToken: string, accountId: string): Promise<PlatformMetrics> {
     if (accessToken.startsWith('ig_live_') || accessToken.startsWith('demo_')) {
@@ -219,7 +227,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
 
       const followers = accountData.followers_count || 0;
 
-      // 2. Try fetching account insights (requires instagram_manage_insights + App Review in prod)
+      // 2. Try fetching account insights if available
       let reach = 0;
       let impressions = 0;
       let profileVisits = 0;
@@ -240,7 +248,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
           }
         }
       } catch (insightErr) {
-        // Handled gracefully if insights permission requires App Review
+        // Handled gracefully: Insights are optional capabilities
       }
 
       const engagementRate = reach > 0 ? Number(((totalInteractions / reach) * 100).toFixed(1)) : 0;
@@ -248,13 +256,13 @@ export class InstagramIntegration extends BaseSocialIntegration {
 
       return {
         followers,
-        growthThisMonth: Math.round(followers * 0.05),
-        growthRate: 5.2,
-        reach: reach || Math.round(followers * 2.5),
-        views: impressions || Math.round(followers * 3.5),
-        engagement: totalInteractions || Math.round(followers * 0.08),
-        engagementRate: engagementRate || 4.2,
-        profileVisits: profileVisits || Math.round(followers * 0.04),
+        growthThisMonth: 0,
+        growthRate: 0,
+        reach: reach || 0,
+        views: impressions || 0,
+        engagement: totalInteractions || 0,
+        engagementRate: engagementRate || 0,
+        profileVisits: profileVisits || 0,
         leadsGenerated: 0,
         growthScore
       };

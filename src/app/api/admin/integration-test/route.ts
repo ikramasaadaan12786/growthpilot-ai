@@ -122,8 +122,8 @@ export async function POST(req: NextRequest) {
 
       // Check specific platform permission requirements
       if (platform === 'INSTAGRAM') {
-        if (!scopesGranted.includes('instagram_manage_insights')) analyticsStatus = 'REQUIRES_APPROVAL';
-        if (!scopesGranted.includes('instagram_content_publish')) publishingStatus = 'REQUIRES_APPROVAL';
+        if (!scopesGranted.includes('instagram_basic')) analyticsStatus = 'REQUIRES_APPROVAL';
+        if (!scopesGranted.includes('instagram_content_publishing')) publishingStatus = 'REQUIRES_APPROVAL';
       } else if (platform === 'FACEBOOK') {
         if (!scopesGranted.includes('pages_read_engagement')) analyticsStatus = 'REQUIRES_APPROVAL';
         if (!scopesGranted.includes('pages_manage_posts')) publishingStatus = 'REQUIRES_APPROVAL';

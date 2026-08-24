@@ -27,6 +27,9 @@ export class LinkedInIntegration extends BaseSocialIntegration {
   }
 
   private getRedirectUri(): string {
+    if (process.env.LINKEDIN_REDIRECT_URI) {
+      return process.env.LINKEDIN_REDIRECT_URI;
+    }
     let base = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || '';
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
@@ -34,7 +37,7 @@ export class LinkedInIntegration extends BaseSocialIntegration {
     if (!base) {
       base = 'http://localhost:3000';
     }
-    return process.env.LINKEDIN_REDIRECT_URI || `${base}/api/auth/oauth/linkedin/callback`;
+    return `${base}/api/auth/oauth/linkedin/callback`;
   }
 
   private readonly oauthBase = 'https://www.linkedin.com/oauth/v2';
