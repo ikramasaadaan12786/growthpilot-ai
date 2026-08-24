@@ -7,11 +7,24 @@ import { SocialPlatform, PlatformMetrics } from '@/types';
 export class LinkedInIntegration extends BaseSocialIntegration {
   readonly platform: SocialPlatform = 'LINKEDIN';
   readonly platformName = 'LinkedIn Pages & Profiles';
+  
+  // Active initial LinkedIn OAuth authorization scopes (OIDC Member Identity & optional Personal Publishing)
   readonly requiredScopes = [
     'openid',
     'profile',
     'email',
-    'w_member_social',
+    'w_member_social'
+  ];
+
+  // Minimal fallback scopes if w_member_social is not enabled for the LinkedIn Developer app
+  readonly basicScopes = [
+    'openid',
+    'profile',
+    'email'
+  ];
+
+  // Optional capabilities requiring advanced LinkedIn Community Management API approval (future upgrade)
+  readonly organizationScopes = [
     'r_organization_social',
     'w_organization_social',
     'rw_organization_admin'
@@ -44,15 +57,26 @@ export class LinkedInIntegration extends BaseSocialIntegration {
   private readonly apiBase = 'https://api.linkedin.com/v2';
 
   /**
-   * Generates official LinkedIn OAuth 2.0 authorization URL
+   * Generates official LinkedIn OAuth 2.0 authorization URL with space-delimited scopes
    */
-  getAuthorizationUrl(state: string): string {
+  getAuthorizationUrl(state: string, useBasicOnly: boolean = false): string {
     const clientId = this.getClientId();
     if (!clientId || clientId === 'growthpilot_linkedin_client_id' || clientId.includes('placeholder')) {
       throw new Error('LINKEDIN_CLIENT_ID_MISSING: LINKEDIN_CLIENT_ID environment variable is missing or unconfigured.');
     }
     const redirectUri = this.getRedirectUri();
-    const scopeParam = encodeURIComponent(this.requiredScopes.join(' '));
+    
+    // Select verified available scopes (default to [openid, profile, email, w_member_social] or [openid, profile, email])
+    let scopes = useBasicOnly ? this.basicScopes : this.requiredScopes;
+    if (process.env.LINKEDIN_SCOPES) {
+      scopes = process.env.LINKEDIN_SCOPES.split(/[,\s]+/).filter(Boolean);
+    }
+    
+    // Organization scopes must NEVER be included in initial authorization
+    scopes = scopes.filter(s => !this.organizationScopes.includes(s));
+
+    // Space-delimited per RFC 6749 and LinkedIn OAuth 2.0 specification
+    const scopeParam = encodeURIComponent(scopes.join(' '));
     return `${this.oauthBase}/authorization?response_type=code&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&scope=${scopeParam}`;
   }
 

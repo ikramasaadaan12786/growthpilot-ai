@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
         if (!scopesGranted.includes('pages_read_engagement')) analyticsStatus = 'REQUIRES_APPROVAL';
         if (!scopesGranted.includes('pages_show_list')) publishingStatus = 'REQUIRES_APPROVAL';
       } else if (platform === 'LINKEDIN') {
-        if (!scopesGranted.includes('rw_organization_admin')) analyticsStatus = 'PASS';
+        if (!scopesGranted.includes('openid')) analyticsStatus = 'REQUIRES_APPROVAL';
         if (!scopesGranted.includes('w_member_social')) publishingStatus = 'REQUIRES_APPROVAL';
       } else if (platform === 'TIKTOK') {
         if (!scopesGranted.includes('video.publish')) publishingStatus = 'REQUIRES_APPROVAL';

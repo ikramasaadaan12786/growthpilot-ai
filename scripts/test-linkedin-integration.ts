@@ -276,6 +276,63 @@ async function runLinkedInIntegrationTests() {
     assert(false, 'Test 13: Production Redirect URI Resolution', err.message);
   }
 
+  // Test 14: Organization Scopes Complete Absence from Initial OAuth
+  try {
+    process.env.LINKEDIN_CLIENT_ID = 'test_real_client_id_112233';
+    const authUrl = li.getAuthorizationUrl('STATE_SCOPES_CHECK');
+    const parsed = new URL(authUrl);
+    const rawScopeParam = parsed.searchParams.get('scope') || '';
+
+    const hasNoROrg = !rawScopeParam.includes('r_organization_social');
+    const hasNoWOrg = !rawScopeParam.includes('w_organization_social');
+    const hasNoRwAdmin = !rawScopeParam.includes('rw_organization_admin');
+    const hasBasicOidc = rawScopeParam.includes('openid') && rawScopeParam.includes('profile') && rawScopeParam.includes('email');
+
+    assert(
+      Boolean(hasNoROrg && hasNoWOrg && hasNoRwAdmin && hasBasicOidc),
+      'Test 14: Organization Scopes Absence in Initial OAuth',
+      'Confirmed r_organization_social, w_organization_social, and rw_organization_admin are strictly absent from initial authorization'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 14: Organization Scopes Absence in Initial OAuth', err.message);
+  }
+
+  // Test 15: Space-Delimited Scope Parameter Encoding (RFC 6749)
+  try {
+    process.env.LINKEDIN_CLIENT_ID = 'test_real_client_id_112233';
+    const authUrl = li.getAuthorizationUrl('STATE_SPACE_CHECK');
+    
+    // Check that scope query parameter in raw URL is space-delimited (encoded as %20 or +)
+    const isSpaceDelimited = authUrl.includes('scope=openid%20profile%20email%20w_member_social') || authUrl.includes('scope=openid+profile+email+w_member_social');
+    const isNotCommaDelimited = !authUrl.includes('%2C');
+
+    assert(
+      Boolean(isSpaceDelimited && isNotCommaDelimited),
+      'Test 15: Space-Delimited Scope Encoding',
+      'OAuth scope parameter is formatted as space-delimited string (RFC 6749 / LinkedIn standard)'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 15: Space-Delimited Scope Encoding', err.message);
+  }
+
+  // Test 16: Capability-Aware Basic Scope Fallback
+  try {
+    process.env.LINKEDIN_CLIENT_ID = 'test_real_client_id_112233';
+    const basicUrl = li.getAuthorizationUrl('STATE_BASIC_ONLY', true);
+    const parsed = new URL(basicUrl);
+    const scopeParam = parsed.searchParams.get('scope') || '';
+
+    const isBasicOnly = scopeParam === 'openid profile email';
+
+    assert(
+      isBasicOnly,
+      'Test 16: Capability-Aware Basic Scope Fallback',
+      'Supports pure basic identity connection (openid profile email) when publishing is unconfigured'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 16: Capability-Aware Basic Scope Fallback', err.message);
+  }
+
   console.log('\n=========================================================');
   const passCount = results.filter(r => r.passed).length;
   console.log(`  TEST RESULTS SUMMARY: ${passCount}/${results.length} PASSED`);
