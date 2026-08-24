@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Settings, 
   ShieldCheck, 
@@ -39,6 +39,33 @@ export default function SettingsPage() {
   const [geminiKey, setGeminiKey] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const [envInfo, setEnvInfo] = useState<{ isProd: boolean; label: string; host: string }>({
+    isProd: false,
+    label: 'LOCAL DEVELOPMENT (Zero Cost)',
+    host: 'Port: localhost:3000 • SSL Ready'
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const host = window.location.host;
+      const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+
+      if (!isLocal) {
+        setEnvInfo({
+          isProd: true,
+          label: 'PRODUCTION',
+          host: `${host} • SSL Active`
+        });
+      } else {
+        setEnvInfo({
+          isProd: false,
+          label: 'LOCAL DEVELOPMENT (Zero Cost)',
+          host: `Port: ${host || 'localhost:3000'} • SSL Ready`
+        });
+      }
+    }
+  }, []);
 
   const handleSaveKeys = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,10 +157,10 @@ export default function SettingsPage() {
 
           <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-1">
             <div className="text-slate-500 uppercase text-[10px]">Environment</div>
-            <div className="text-sm font-black text-cyan-400 font-sans">
-              LOCAL DEVELOPMENT (Zero Cost)
+            <div className={`text-sm font-black font-sans ${envInfo.isProd ? 'text-emerald-400' : 'text-cyan-400'}`}>
+              {envInfo.label}
             </div>
-            <div className="text-[11px] text-slate-400">Port: localhost:3000 • SSL Ready</div>
+            <div className="text-[11px] text-slate-400">{envInfo.host}</div>
           </div>
 
           <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-1">
