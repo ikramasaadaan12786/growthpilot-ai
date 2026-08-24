@@ -22,6 +22,77 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
   {
     id: 'acc-ig-1',
     platform: 'INSTAGRAM',
+    accountId: '',
+    accountName: 'Instagram Professional',
+    username: 'Not Connected',
+    avatarUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
+    followerCount: 0,
+    followingCount: 0,
+    postCount: 0,
+    growthScore: 0,
+    growthPercentage: 0,
+    status: 'NOT_CONNECTED',
+    lastSyncAt: 'Never',
+    officialScopes: ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights', 'pages_read_engagement'],
+    rateLimitUsage: { used: 0, total: 200 }
+  },
+  {
+    id: 'acc-fb-1',
+    platform: 'FACEBOOK',
+    accountId: '',
+    accountName: 'Facebook Page',
+    username: 'Not Connected',
+    avatarUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=150&auto=format&fit=crop&q=80',
+    followerCount: 0,
+    followingCount: 0,
+    postCount: 0,
+    growthScore: 0,
+    growthPercentage: 0,
+    status: 'NOT_CONNECTED',
+    lastSyncAt: 'Never',
+    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_read_user_content'],
+    rateLimitUsage: { used: 0, total: 200 }
+  },
+  {
+    id: 'acc-li-1',
+    platform: 'LINKEDIN',
+    accountId: '',
+    accountName: 'LinkedIn Profile / Page',
+    username: 'Not Connected',
+    avatarUrl: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=150&auto=format&fit=crop&q=80',
+    followerCount: 0,
+    followingCount: 0,
+    postCount: 0,
+    growthScore: 0,
+    growthPercentage: 0,
+    status: 'NOT_CONNECTED',
+    lastSyncAt: 'Never',
+    officialScopes: ['openid', 'profile', 'email', 'w_member_social', 'r_organization_social', 'w_organization_social'],
+    rateLimitUsage: { used: 0, total: 500 }
+  },
+  {
+    id: 'acc-tt-1',
+    platform: 'TIKTOK',
+    accountId: '',
+    accountName: 'TikTok Account',
+    username: 'Not Connected',
+    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    followerCount: 0,
+    followingCount: 0,
+    postCount: 0,
+    growthScore: 0,
+    growthPercentage: 0,
+    status: 'NOT_CONNECTED',
+    lastSyncAt: 'Never',
+    officialScopes: ['user.info.basic', 'video.list', 'video.upload', 'video.publish'],
+    rateLimitUsage: { used: 0, total: 300 }
+  }
+];
+
+export const DEMO_BENCHMARK_ACCOUNTS: SocialAccountData[] = [
+  {
+    id: 'acc-ig-1',
+    platform: 'INSTAGRAM',
     accountId: '17841405309211904',
     accountName: 'GrowthPilot Properties',
     username: '@growthpilot_re',
@@ -31,7 +102,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     postCount: 318,
     growthScore: 87,
     growthPercentage: 8.4,
-    status: 'CONNECTED',
+    status: 'DEMO_CONNECTED',
     lastSyncAt: 'Just now',
     officialScopes: ['instagram_basic', 'instagram_content_publish', 'instagram_manage_insights', 'pages_read_engagement'],
     rateLimitUsage: { used: 42, total: 200 }
@@ -48,7 +119,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     postCount: 512,
     growthScore: 78,
     growthPercentage: 4.2,
-    status: 'CONNECTED',
+    status: 'DEMO_CONNECTED',
     lastSyncAt: '2 mins ago',
     officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_read_user_content'],
     rateLimitUsage: { used: 19, total: 200 }
@@ -65,7 +136,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     postCount: 184,
     growthScore: 91,
     growthPercentage: 14.6,
-    status: 'CONNECTED',
+    status: 'DEMO_CONNECTED',
     lastSyncAt: '5 mins ago',
     officialScopes: ['openid', 'profile', 'email', 'w_member_social', 'r_organization_social', 'w_organization_social', 'rw_organization_admin'],
     rateLimitUsage: { used: 31, total: 500 }
@@ -82,7 +153,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     postCount: 142,
     growthScore: 84,
     growthPercentage: 22.1,
-    status: 'CONNECTED',
+    status: 'DEMO_CONNECTED',
     lastSyncAt: '1 min ago',
     officialScopes: ['user.info.basic', 'video.list', 'video.upload', 'video.publish'],
     rateLimitUsage: { used: 55, total: 300 }
@@ -90,6 +161,69 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
 ];
 
 export const INITIAL_PLATFORM_METRICS: Record<'ALL' | 'INSTAGRAM' | 'FACEBOOK' | 'LINKEDIN' | 'TIKTOK', PlatformMetrics> = {
+  ALL: {
+    followers: 0,
+    growthThisMonth: 0,
+    growthRate: 0,
+    reach: 0,
+    views: 0,
+    engagement: 0,
+    engagementRate: 0,
+    profileVisits: 0,
+    leadsGenerated: 0,
+    growthScore: 0
+  },
+  INSTAGRAM: {
+    followers: 0,
+    growthThisMonth: 0,
+    growthRate: 0,
+    reach: 0,
+    views: 0,
+    engagement: 0,
+    engagementRate: 0,
+    profileVisits: 0,
+    leadsGenerated: 0,
+    growthScore: 0
+  },
+  FACEBOOK: {
+    followers: 0,
+    growthThisMonth: 0,
+    growthRate: 0,
+    reach: 0,
+    views: 0,
+    engagement: 0,
+    engagementRate: 0,
+    profileVisits: 0,
+    leadsGenerated: 0,
+    growthScore: 0
+  },
+  LINKEDIN: {
+    followers: 0,
+    growthThisMonth: 0,
+    growthRate: 0,
+    reach: 0,
+    views: 0,
+    engagement: 0,
+    engagementRate: 0,
+    profileVisits: 0,
+    leadsGenerated: 0,
+    growthScore: 0
+  },
+  TIKTOK: {
+    followers: 0,
+    growthThisMonth: 0,
+    growthRate: 0,
+    reach: 0,
+    views: 0,
+    engagement: 0,
+    engagementRate: 0,
+    profileVisits: 0,
+    leadsGenerated: 0,
+    growthScore: 0
+  }
+};
+
+export const DEMO_BENCHMARK_METRICS: Record<'ALL' | 'INSTAGRAM' | 'FACEBOOK' | 'LINKEDIN' | 'TIKTOK', PlatformMetrics> = {
   ALL: {
     followers: 77400,
     growthThisMonth: 8240,
@@ -145,7 +279,7 @@ export const INITIAL_PLATFORM_METRICS: Record<'ALL' | 'INSTAGRAM' | 'FACEBOOK' |
     reach: 236000,
     views: 632000,
     engagement: 36000,
-    engagementRate: 5.7,
+    engagementRate: 8.1,
     profileVisits: 10000,
     leadsGenerated: 38,
     growthScore: 84

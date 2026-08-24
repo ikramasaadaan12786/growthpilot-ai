@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { INITIAL_SOCIAL_ACCOUNTS, INITIAL_PLATFORM_METRICS } from '@/lib/mock-data';
+import { INITIAL_SOCIAL_ACCOUNTS, INITIAL_PLATFORM_METRICS, DEMO_BENCHMARK_ACCOUNTS, DEMO_BENCHMARK_METRICS } from '@/lib/mock-data';
+import { aggregateConnectedAccountsMetrics } from '@/lib/growth-engine';
 import { prisma } from '@/lib/db';
 import { SocialPlatform, SocialAccountData } from '@/types';
 
@@ -14,8 +15,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         success: true,
         mode: 'DEMO',
-        accounts: INITIAL_SOCIAL_ACCOUNTS,
-        metrics: INITIAL_PLATFORM_METRICS
+        accounts: DEMO_BENCHMARK_ACCOUNTS,
+        metrics: DEMO_BENCHMARK_METRICS
       });
     }
 
@@ -77,18 +78,21 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    const metrics = aggregateConnectedAccountsMetrics(accounts, [], []);
+
     return NextResponse.json({
       success: true,
       mode: 'LIVE',
       accounts,
-      metrics: INITIAL_PLATFORM_METRICS
+      metrics
     });
   } catch (error: any) {
     console.error('Error fetching social accounts:', error);
     return NextResponse.json({
       success: false,
       error: error.message || 'Database error',
-      accounts: INITIAL_SOCIAL_ACCOUNTS
+      accounts: INITIAL_SOCIAL_ACCOUNTS,
+      metrics: INITIAL_PLATFORM_METRICS
     }, { status: 500 });
   }
 }

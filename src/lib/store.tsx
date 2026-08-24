@@ -20,7 +20,9 @@ import {
 } from '@/types';
 import { 
   INITIAL_SOCIAL_ACCOUNTS, 
-  INITIAL_PLATFORM_METRICS, 
+  INITIAL_PLATFORM_METRICS,
+  DEMO_BENCHMARK_ACCOUNTS,
+  DEMO_BENCHMARK_METRICS,
   INITIAL_CALENDAR_ITEMS, 
   INITIAL_LEADS, 
   INITIAL_CAMPAIGNS, 
@@ -105,7 +107,7 @@ const INITIAL_AUTOMATION_LOGS: AutomationLogItem[] = [
 ];
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [isDemoMode, setIsDemoModeState] = useState<boolean>(true);
+  const [isDemoMode, setIsDemoModeState] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [isDesktopApp, setIsDesktopApp] = useState<boolean>(false);
   const [platformFilter, setPlatformFilter] = useState<PlatformFilterType>('ALL');
@@ -142,10 +144,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       const savedDemo = localStorage.getItem('gp_is_demo_mode');
-      if (savedDemo !== null) setIsDemoModeState(savedDemo === 'true');
+      if (savedDemo !== null) {
+        setIsDemoModeState(savedDemo === 'true');
+      }
 
-      const savedAccounts = localStorage.getItem('gp_social_accounts');
-      if (savedAccounts) setSocialAccounts(JSON.parse(savedAccounts));
+      // Fetch real accounts from database in Live mode
+      fetch('/api/social/accounts')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && Array.isArray(data.accounts)) {
+            setSocialAccounts(data.accounts);
+          }
+        })
+        .catch(() => {});
       
       const savedCalendar = localStorage.getItem('gp_calendar_posts');
       if (savedCalendar) setCalendarPosts(JSON.parse(savedCalendar));
@@ -163,6 +174,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem('gp_is_demo_mode', String(val));
     } catch (e) {}
+
+    if (val) {
+      setSocialAccounts(DEMO_BENCHMARK_ACCOUNTS);
+    } else {
+      fetch('/api/social/accounts')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && Array.isArray(data.accounts)) {
+            setSocialAccounts(data.accounts);
+          } else {
+            setSocialAccounts(INITIAL_SOCIAL_ACCOUNTS);
+          }
+        })
+        .catch(() => {
+          setSocialAccounts(INITIAL_SOCIAL_ACCOUNTS);
+        });
+    }
+
     triggerNotification(
       'MILESTONE',
       val ? 'Demo Mode Enabled' : 'Live Data Mode Activated',
@@ -480,7 +509,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     leads
   );
 
-  const activeMetrics = isDemoMode ? INITIAL_PLATFORM_METRICS : liveMetrics;
+  const activeMetrics = isDemoMode ? DEMO_BENCHMARK_METRICS : liveMetrics;
 
   return (
     <AppContext.Provider

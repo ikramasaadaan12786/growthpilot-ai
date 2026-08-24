@@ -30,6 +30,15 @@ export default function DashboardPage() {
   const metrics = platformMetrics[platformFilter];
   const connectedCount = socialAccounts.filter(a => a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED').length;
 
+  const isAccConnected = (plat: string) => {
+    return socialAccounts.some(a => a.platform === plat && (a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED'));
+  };
+
+  const getFollowerDisplay = (plat: string) => {
+    const acc = socialAccounts.find(a => a.platform === plat && (a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED'));
+    return acc ? acc.followerCount.toLocaleString() : 'Not Connected';
+  };
+
   return (
     <div className="space-y-8">
       {/* Offline Live Mode Alert */}
@@ -45,25 +54,60 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Live Mode / Demo Mode Alert Banner */}
-      {!isDemoMode && isOnline && connectedCount === 0 && (
-        <div className="bg-indigo-950/60 border border-indigo-500/40 p-4 rounded-2xl flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Radio className="w-5 h-5 text-indigo-400 animate-pulse shrink-0" />
-            <div>
-              <div className="font-bold text-white text-xs">Live Data Mode Active</div>
-              <div className="text-[11px] text-slate-300">
-                No real social accounts are connected yet. Connect your official Instagram, Facebook, LinkedIn, or TikTok accounts to aggregate live metrics.
+      {/* No Connected Accounts Useful Empty State (Task 7 Requirement) */}
+      {!isDemoMode && connectedCount === 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-card space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <Radio className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">No social accounts connected yet.</h2>
+                <p className="text-xs text-slate-400">
+                  Connect your official social-media accounts via OAuth 2.0 to begin syncing verified followers, reach, and AI analytics.
+                </p>
               </div>
             </div>
+            <Link
+              href="/social-accounts"
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold shrink-0 flex items-center gap-1.5 border border-slate-700 transition-colors"
+            >
+              <span>Manage Integrations</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <Link
-            href="/social-accounts"
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shrink-0 flex items-center gap-1.5 shadow-md shadow-indigo-600/30"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Connect Accounts</span>
-          </Link>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Link
+              href="/social-accounts"
+              className="px-4 py-3 bg-gradient-to-r from-pink-600/20 to-pink-900/10 hover:from-pink-600/30 hover:to-pink-900/20 border border-pink-500/30 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group"
+            >
+              <span>Connect Instagram</span>
+              <Plus className="w-4 h-4 text-pink-400 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link
+              href="/social-accounts"
+              className="px-4 py-3 bg-gradient-to-r from-blue-600/20 to-blue-900/10 hover:from-blue-600/30 hover:to-blue-900/20 border border-blue-500/30 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group"
+            >
+              <span>Connect Facebook</span>
+              <Plus className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link
+              href="/social-accounts"
+              className="px-4 py-3 bg-gradient-to-r from-sky-600/20 to-sky-900/10 hover:from-sky-600/30 hover:to-sky-900/20 border border-sky-500/30 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group"
+            >
+              <span>Connect LinkedIn</span>
+              <Plus className="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform" />
+            </Link>
+            <Link
+              href="/social-accounts"
+              className="px-4 py-3 bg-gradient-to-r from-slate-700/30 to-slate-800/20 hover:from-slate-700/50 hover:to-slate-800/40 border border-slate-600/40 rounded-xl text-xs font-bold text-white flex items-center justify-between transition-all group"
+            >
+              <span>Connect TikTok</span>
+              <Plus className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+            </Link>
+          </div>
         </div>
       )}
 
@@ -111,10 +155,10 @@ export default function DashboardPage() {
           breakdown={
             platformFilter === 'ALL'
               ? {
-                  instagram: isDemoMode ? '24,850' : (socialAccounts.find(a => a.platform === 'INSTAGRAM' && a.status === 'CONNECTED')?.followerCount.toLocaleString() || 'N/A'),
-                  facebook: isDemoMode ? '12,430' : (socialAccounts.find(a => a.platform === 'FACEBOOK' && a.status === 'CONNECTED')?.followerCount.toLocaleString() || 'N/A'),
-                  linkedin: isDemoMode ? '8,920' : (socialAccounts.find(a => a.platform === 'LINKEDIN' && a.status === 'CONNECTED')?.followerCount.toLocaleString() || 'N/A'),
-                  tiktok: isDemoMode ? '31,200' : (socialAccounts.find(a => a.platform === 'TIKTOK' && a.status === 'CONNECTED')?.followerCount.toLocaleString() || 'N/A')
+                  instagram: isDemoMode ? '24,850' : getFollowerDisplay('INSTAGRAM'),
+                  facebook: isDemoMode ? '12,430' : getFollowerDisplay('FACEBOOK'),
+                  linkedin: isDemoMode ? '8,920' : getFollowerDisplay('LINKEDIN'),
+                  tiktok: isDemoMode ? '31,200' : getFollowerDisplay('TIKTOK')
                 }
               : undefined
           }
@@ -123,16 +167,16 @@ export default function DashboardPage() {
         <MetricCard
           title="Total Reach"
           value={metrics.reach.toLocaleString()}
-          changePercentage={18.4}
+          changePercentage={metrics.reach > 0 ? 18.4 : 0}
           icon={Share2}
           iconColor="text-pink-400"
           breakdown={
             platformFilter === 'ALL'
               ? {
-                  instagram: isDemoMode ? '184.5k' : 'Live Synced',
-                  facebook: isDemoMode ? '98.2k' : 'Live Synced',
-                  linkedin: isDemoMode ? '124.1k' : 'Live Synced',
-                  tiktok: isDemoMode ? '236.0k' : 'Live Synced'
+                  instagram: isDemoMode ? '184.5k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
+                  facebook: isDemoMode ? '98.2k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
+                  linkedin: isDemoMode ? '124.1k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
+                  tiktok: isDemoMode ? '236.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
                 }
               : undefined
           }
@@ -141,16 +185,16 @@ export default function DashboardPage() {
         <MetricCard
           title="Total Video Views"
           value={metrics.views.toLocaleString()}
-          changePercentage={24.1}
+          changePercentage={metrics.views > 0 ? 24.1 : 0}
           icon={Eye}
           iconColor="text-cyan-400"
           breakdown={
             platformFilter === 'ALL'
               ? {
-                  instagram: isDemoMode ? '312.0k' : 'Live Synced',
-                  facebook: isDemoMode ? '142.0k' : 'Live Synced',
-                  linkedin: isDemoMode ? '198.5k' : 'Live Synced',
-                  tiktok: isDemoMode ? '632.0k' : 'Live Synced'
+                  instagram: isDemoMode ? '312.0k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
+                  facebook: isDemoMode ? '142.0k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
+                  linkedin: isDemoMode ? '198.5k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
+                  tiktok: isDemoMode ? '632.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
                 }
               : undefined
           }
@@ -159,16 +203,16 @@ export default function DashboardPage() {
         <MetricCard
           title="Total Engagement"
           value={metrics.engagement.toLocaleString()}
-          changePercentage={9.2}
+          changePercentage={metrics.engagement > 0 ? 9.2 : 0}
           icon={Flame}
           iconColor="text-amber-400"
           breakdown={
             platformFilter === 'ALL'
               ? {
-                  instagram: isDemoMode ? '29.8k' : 'Live Synced',
-                  facebook: isDemoMode ? '11.2k' : 'Live Synced',
-                  linkedin: isDemoMode ? '21.4k' : 'Live Synced',
-                  tiktok: isDemoMode ? '36.0k' : 'Live Synced'
+                  instagram: isDemoMode ? '29.8k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
+                  facebook: isDemoMode ? '11.2k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
+                  linkedin: isDemoMode ? '21.4k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
+                  tiktok: isDemoMode ? '36.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
                 }
               : undefined
           }
@@ -177,16 +221,16 @@ export default function DashboardPage() {
         <MetricCard
           title="Total Profile Visits"
           value={metrics.profileVisits.toLocaleString()}
-          changePercentage={12.8}
+          changePercentage={metrics.profileVisits > 0 ? 12.8 : 0}
           icon={MousePointer}
           iconColor="text-purple-400"
           breakdown={
             platformFilter === 'ALL'
               ? {
-                  instagram: isDemoMode ? '11.4k' : 'Live Synced',
-                  facebook: isDemoMode ? '4.8k' : 'Live Synced',
-                  linkedin: isDemoMode ? '7.9k' : 'Live Synced',
-                  tiktok: isDemoMode ? '10.0k' : 'Live Synced'
+                  instagram: isDemoMode ? '11.4k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
+                  facebook: isDemoMode ? '4.8k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
+                  linkedin: isDemoMode ? '7.9k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
+                  tiktok: isDemoMode ? '10.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
                 }
               : undefined
           }
@@ -195,16 +239,16 @@ export default function DashboardPage() {
         <MetricCard
           title="Total Inbound Leads"
           value={metrics.leadsGenerated.toLocaleString()}
-          changePercentage={31.5}
+          changePercentage={metrics.leadsGenerated > 0 ? 31.5 : 0}
           icon={UserCheck}
           iconColor="text-emerald-400"
           breakdown={
             platformFilter === 'ALL'
               ? {
-                  instagram: isDemoMode ? '54' : 'Live Synced',
-                  facebook: isDemoMode ? '32' : 'Live Synced',
-                  linkedin: isDemoMode ? '94' : 'Live Synced',
-                  tiktok: isDemoMode ? '38' : 'Live Synced'
+                  instagram: isDemoMode ? '54' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
+                  facebook: isDemoMode ? '32' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
+                  linkedin: isDemoMode ? '94' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
+                  tiktok: isDemoMode ? '38' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
                 }
               : undefined
           }
