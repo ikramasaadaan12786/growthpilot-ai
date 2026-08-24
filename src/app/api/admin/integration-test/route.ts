@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
         if (!scopesGranted.includes('instagram_basic')) publishingStatus = 'REQUIRES_APPROVAL';
       } else if (platform === 'FACEBOOK') {
         if (!scopesGranted.includes('pages_read_engagement')) analyticsStatus = 'REQUIRES_APPROVAL';
-        if (!scopesGranted.includes('pages_manage_posts')) publishingStatus = 'REQUIRES_APPROVAL';
+        if (!scopesGranted.includes('pages_show_list')) publishingStatus = 'REQUIRES_APPROVAL';
       } else if (platform === 'LINKEDIN') {
         if (!scopesGranted.includes('rw_organization_admin')) analyticsStatus = 'PASS';
         if (!scopesGranted.includes('w_member_social')) publishingStatus = 'REQUIRES_APPROVAL';

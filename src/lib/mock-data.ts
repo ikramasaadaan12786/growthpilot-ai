@@ -50,7 +50,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 0,
     status: 'NOT_CONNECTED',
     lastSyncAt: 'Never',
-    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
+    officialScopes: ['pages_show_list', 'pages_read_engagement', 'business_management'],
     rateLimitUsage: { used: 0, total: 200 }
   },
   {
@@ -121,7 +121,7 @@ export const DEMO_BENCHMARK_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 4.2,
     status: 'DEMO_CONNECTED',
     lastSyncAt: '2 mins ago',
-    officialScopes: ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'business_management'],
+    officialScopes: ['pages_show_list', 'pages_read_engagement', 'business_management'],
     rateLimitUsage: { used: 19, total: 200 }
   },
   {
