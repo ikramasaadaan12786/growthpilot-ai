@@ -67,7 +67,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 0,
     status: 'NOT_CONNECTED',
     lastSyncAt: 'Never',
-    officialScopes: ['openid', 'profile', 'email', 'w_member_social'],
+    officialScopes: ['openid', 'profile', 'email'],
     rateLimitUsage: { used: 0, total: 500 }
   },
   {
@@ -138,7 +138,7 @@ export const DEMO_BENCHMARK_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 14.6,
     status: 'DEMO_CONNECTED',
     lastSyncAt: '5 mins ago',
-    officialScopes: ['openid', 'profile', 'email', 'w_member_social'],
+    officialScopes: ['openid', 'profile', 'email'],
     rateLimitUsage: { used: 31, total: 500 }
   },
   {

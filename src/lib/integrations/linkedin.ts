@@ -6,21 +6,18 @@ import { SocialPlatform, PlatformMetrics } from '@/types';
 
 export class LinkedInIntegration extends BaseSocialIntegration {
   readonly platform: SocialPlatform = 'LINKEDIN';
-  readonly platformName = 'LinkedIn Pages & Profiles';
+  readonly platformName = 'LinkedIn Profile & Pages';
   
-  // Active initial LinkedIn OAuth authorization scopes (OIDC Member Identity & optional Personal Publishing)
+  // Active initial LinkedIn OAuth authorization scopes (OIDC Member Identity ONLY)
   readonly requiredScopes = [
     'openid',
     'profile',
-    'email',
-    'w_member_social'
+    'email'
   ];
 
-  // Minimal fallback scopes if w_member_social is not enabled for the LinkedIn Developer app
-  readonly basicScopes = [
-    'openid',
-    'profile',
-    'email'
+  // Optional personal publishing capability (requires Share on LinkedIn product approval)
+  readonly optionalPublishingScopes = [
+    'w_member_social'
   ];
 
   // Optional capabilities requiring advanced LinkedIn Community Management API approval (future upgrade)
@@ -29,7 +26,7 @@ export class LinkedInIntegration extends BaseSocialIntegration {
     'w_organization_social',
     'rw_organization_admin'
   ];
-  readonly documentationUrl = 'https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/share-on-linkedin';
+  readonly documentationUrl = 'https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2';
 
   private getClientId(): string {
     return process.env.LINKEDIN_CLIENT_ID || process.env.LINKEDIN_APP_ID || '';
@@ -57,23 +54,23 @@ export class LinkedInIntegration extends BaseSocialIntegration {
   private readonly apiBase = 'https://api.linkedin.com/v2';
 
   /**
-   * Generates official LinkedIn OAuth 2.0 authorization URL with space-delimited scopes
+   * Generates official LinkedIn OAuth 2.0 authorization URL with space-delimited basic scopes (openid profile email)
    */
-  getAuthorizationUrl(state: string, useBasicOnly: boolean = false): string {
+  getAuthorizationUrl(state: string): string {
     const clientId = this.getClientId();
     if (!clientId || clientId === 'growthpilot_linkedin_client_id' || clientId.includes('placeholder')) {
       throw new Error('LINKEDIN_CLIENT_ID_MISSING: LINKEDIN_CLIENT_ID environment variable is missing or unconfigured.');
     }
     const redirectUri = this.getRedirectUri();
     
-    // Select verified available scopes (default to [openid, profile, email, w_member_social] or [openid, profile, email])
-    let scopes = useBasicOnly ? this.basicScopes : this.requiredScopes;
+    // Scopes strictly restricted to verified basic OpenID Connect scopes
+    let scopes = [...this.requiredScopes];
     if (process.env.LINKEDIN_SCOPES) {
       scopes = process.env.LINKEDIN_SCOPES.split(/[,\s]+/).filter(Boolean);
     }
     
-    // Organization scopes must NEVER be included in initial authorization
-    scopes = scopes.filter(s => !this.organizationScopes.includes(s));
+    // Non-basic publishing and organization scopes must NEVER be included in initial authorization
+    scopes = scopes.filter(s => !this.optionalPublishingScopes.includes(s) && !this.organizationScopes.includes(s));
 
     // Space-delimited per RFC 6749 and LinkedIn OAuth 2.0 specification
     const scopeParam = encodeURIComponent(scopes.join(' '));

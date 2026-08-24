@@ -43,12 +43,12 @@ async function runLinkedInIntegrationTests() {
     const hasCorrectHost = parsed.hostname === 'www.linkedin.com';
     const hasPath = parsed.pathname === '/oauth/v2/authorization';
     const hasClientId = parsed.searchParams.has('client_id');
-    const hasScopes = Boolean(parsed.searchParams.has('scope') && parsed.searchParams.get('scope')?.includes('w_member_social'));
+    const hasScopes = Boolean(parsed.searchParams.has('scope') && parsed.searchParams.get('scope')?.includes('openid') && parsed.searchParams.get('scope')?.includes('profile'));
 
     assert(
       Boolean(hasCorrectHost && hasPath && hasClientId && hasScopes),
       'Test 1: LinkedIn OAuth URL Generation',
-      'Official LinkedIn authorization URL correctly targets /oauth/v2/authorization with required scopes'
+      'Official LinkedIn authorization URL correctly targets /oauth/v2/authorization with basic scopes'
     );
   } catch (err: any) {
     assert(false, 'Test 1: LinkedIn OAuth URL Generation', err.message);
@@ -276,7 +276,7 @@ async function runLinkedInIntegrationTests() {
     assert(false, 'Test 13: Production Redirect URI Resolution', err.message);
   }
 
-  // Test 14: Organization Scopes Complete Absence from Initial OAuth
+  // Test 14: Non-Basic & Organization Scopes Complete Absence from Initial OAuth
   try {
     process.env.LINKEDIN_CLIENT_ID = 'test_real_client_id_112233';
     const authUrl = li.getAuthorizationUrl('STATE_SCOPES_CHECK');
@@ -286,15 +286,16 @@ async function runLinkedInIntegrationTests() {
     const hasNoROrg = !rawScopeParam.includes('r_organization_social');
     const hasNoWOrg = !rawScopeParam.includes('w_organization_social');
     const hasNoRwAdmin = !rawScopeParam.includes('rw_organization_admin');
-    const hasBasicOidc = rawScopeParam.includes('openid') && rawScopeParam.includes('profile') && rawScopeParam.includes('email');
+    const hasNoWMemberSocial = !rawScopeParam.includes('w_member_social');
+    const hasBasicOidc = rawScopeParam === 'openid profile email';
 
     assert(
-      Boolean(hasNoROrg && hasNoWOrg && hasNoRwAdmin && hasBasicOidc),
-      'Test 14: Organization Scopes Absence in Initial OAuth',
-      'Confirmed r_organization_social, w_organization_social, and rw_organization_admin are strictly absent from initial authorization'
+      Boolean(hasNoROrg && hasNoWOrg && hasNoRwAdmin && hasNoWMemberSocial && hasBasicOidc),
+      'Test 14: Non-Basic & Organization Scopes Absence in Initial OAuth',
+      'Confirmed w_member_social, r_organization_social, w_organization_social, and rw_organization_admin are strictly absent from initial authorization'
     );
   } catch (err: any) {
-    assert(false, 'Test 14: Organization Scopes Absence in Initial OAuth', err.message);
+    assert(false, 'Test 14: Non-Basic & Organization Scopes Absence in Initial OAuth', err.message);
   }
 
   // Test 15: Space-Delimited Scope Parameter Encoding (RFC 6749)
@@ -303,34 +304,31 @@ async function runLinkedInIntegrationTests() {
     const authUrl = li.getAuthorizationUrl('STATE_SPACE_CHECK');
     
     // Check that scope query parameter in raw URL is space-delimited (encoded as %20 or +)
-    const isSpaceDelimited = authUrl.includes('scope=openid%20profile%20email%20w_member_social') || authUrl.includes('scope=openid+profile+email+w_member_social');
+    const isSpaceDelimited = authUrl.includes('scope=openid%20profile%20email') || authUrl.includes('scope=openid+profile+email');
     const isNotCommaDelimited = !authUrl.includes('%2C');
 
     assert(
       Boolean(isSpaceDelimited && isNotCommaDelimited),
       'Test 15: Space-Delimited Scope Encoding',
-      'OAuth scope parameter is formatted as space-delimited string (RFC 6749 / LinkedIn standard)'
+      'OAuth scope parameter is formatted as space-delimited string (scope=openid%20profile%20email)'
     );
   } catch (err: any) {
     assert(false, 'Test 15: Space-Delimited Scope Encoding', err.message);
   }
 
-  // Test 16: Capability-Aware Basic Scope Fallback
+  // Test 16: Basic Scope Exact Verification
   try {
     process.env.LINKEDIN_CLIENT_ID = 'test_real_client_id_112233';
-    const basicUrl = li.getAuthorizationUrl('STATE_BASIC_ONLY', true);
-    const parsed = new URL(basicUrl);
-    const scopeParam = parsed.searchParams.get('scope') || '';
-
-    const isBasicOnly = scopeParam === 'openid profile email';
+    const scopes = li.requiredScopes;
+    const isExact = scopes.length === 3 && scopes.includes('openid') && scopes.includes('profile') && scopes.includes('email');
 
     assert(
-      isBasicOnly,
-      'Test 16: Capability-Aware Basic Scope Fallback',
-      'Supports pure basic identity connection (openid profile email) when publishing is unconfigured'
+      isExact,
+      'Test 16: Basic Scope Exact Verification',
+      'LinkedIn requiredScopes contains ONLY [openid, profile, email]'
     );
   } catch (err: any) {
-    assert(false, 'Test 16: Capability-Aware Basic Scope Fallback', err.message);
+    assert(false, 'Test 16: Basic Scope Exact Verification', err.message);
   }
 
   console.log('\n=========================================================');

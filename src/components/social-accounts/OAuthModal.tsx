@@ -50,8 +50,7 @@ export function OAuthModal({ platform, isOpen, onClose, onSuccess }: OAuthModalP
           provider: 'LinkedIn OpenID Connect & UGC API',
           permissions: [
             'Verify member identity (openid, profile, email)',
-            'Publish organic posts and B2B thought leadership articles (w_member_social)',
-            'Organization Management (Requires LinkedIn API approval)'
+            'Content Publishing & Organization Pages (Requires LinkedIn API Approval)'
           ],
           note: 'Direct official API token expires every 60 days with automated background refresh.'
         };
