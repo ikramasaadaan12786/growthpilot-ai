@@ -1,0 +1,300 @@
+'use client';
+
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { 
+  Bell, 
+  PauseCircle, 
+  PlayCircle, 
+  Sparkles, 
+  Search, 
+  CheckCheck, 
+  ChevronDown, 
+  Shield, 
+  Layers,
+  Database,
+  Radio,
+  Eye,
+  Lock,
+  Menu,
+  X,
+  LayoutDashboard,
+  Share2,
+  PenTool,
+  CalendarDays,
+  BarChart3,
+  Flame,
+  Radar,
+  Megaphone,
+  Users2,
+  FileText,
+  Bot,
+  ShieldCheck,
+  Settings,
+  Zap
+} from 'lucide-react';
+import { useApp } from '@/lib/store';
+import { PlatformFilter } from './PlatformFilter';
+import { PlatformBadge } from '../common/PlatformBadge';
+
+const MOBILE_NAV_ITEMS = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/social-accounts', label: 'Social Accounts', icon: Share2 },
+  { href: '/growth-score', label: 'AI Growth Score', icon: Sparkles },
+  { href: '/content-studio', label: 'Content Studio', icon: PenTool },
+  { href: '/calendar', label: 'Content Calendar', icon: CalendarDays },
+  { href: '/analytics', label: 'Analytics & Growth', icon: BarChart3 },
+  { href: '/ideas', label: 'Daily Ideas & Radar', icon: Flame },
+  { href: '/competitors', label: 'Competitors', icon: Radar },
+  { href: '/campaigns', label: 'Ad Campaigns', icon: Megaphone },
+  { href: '/leads', label: 'Lead Center', icon: Users2 },
+  { href: '/reports', label: 'Weekly AI Reports', icon: FileText },
+  { href: '/automation', label: 'Automation Center', icon: Bot },
+  { href: '/admin', label: 'Admin Dashboard', icon: ShieldCheck },
+  { href: '/settings', label: 'Settings & Security', icon: Settings }
+];
+
+export function Header() {
+  const { 
+    isDemoMode,
+    setIsDemoMode,
+    automationSettings, 
+    emergencyPauseAllAutomations, 
+    resumeAllAutomations,
+    notifications,
+    markNotificationRead,
+    markAllNotificationsRead,
+    subscriptionPlan
+  } = useApp();
+
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  return (
+    <div className="sticky top-0 z-30 flex flex-col">
+      {/* Demo Mode Notice Banner (Section 2 Requirement) */}
+      {isDemoMode && (
+        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 text-slate-950 px-4 py-1.5 text-center text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-inner">
+          <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
+          <span>DEMO DATA — NOT LIVE SOCIAL MEDIA DATA</span>
+          <span className="text-[10px] font-normal lowercase bg-slate-950/20 px-2 py-0.5 rounded-full">
+            (Switch to Live Mode for real OAuth accounts)
+          </span>
+        </div>
+      )}
+
+      <header className="h-16 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-2 sm:px-4 md:px-6 flex items-center justify-between gap-1.5 sm:gap-3">
+        {/* Left: Mobile Toggle & Platform Filter */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="md:hidden p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 focus:outline-none shrink-0"
+            aria-label="Toggle Navigation Menu"
+          >
+            {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+          <PlatformFilter />
+        </div>
+
+        {/* Right: Mode Switcher, Actions, Automation Stop & User Profile */}
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+          {/* Demo Mode / Live Mode Switcher */}
+          <div className="inline-flex items-center bg-slate-950 p-0.5 sm:p-1 rounded-xl border border-slate-800 text-xs">
+            <button
+              onClick={() => setIsDemoMode(true)}
+              className={`px-2 sm:px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                isDemoMode
+                  ? 'bg-amber-500 text-slate-950 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="text-[11px] sm:text-xs">Demo</span>
+            </button>
+            <button
+              onClick={() => setIsDemoMode(false)}
+              className={`px-2 sm:px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 ${
+                !isDemoMode
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
+              <span className="text-[11px] sm:text-xs">Live</span>
+            </button>
+          </div>
+
+          {/* Emergency Stop / Resume Automations Button */}
+          {automationSettings.globalPaused ? (
+            <button
+              onClick={resumeAllAutomations}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-500/10"
+              title="Resume all automations"
+            >
+              <PlayCircle className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="hidden sm:inline">RESUME ALL</span>
+            </button>
+          ) : (
+            <button
+              onClick={emergencyPauseAllAutomations}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all shadow-sm shadow-rose-500/10"
+              title="Immediately stops all automated posting, AI generation, and scheduled queues"
+            >
+              <PauseCircle className="w-4 h-4 text-rose-400" />
+              <span className="hidden lg:inline">PAUSE ALL AUTOMATIONS</span>
+              <span className="hidden sm:inline lg:hidden">PAUSE ALL</span>
+            </button>
+          )}
+
+          {/* 1-Click AI Studio Quick CTA (hidden on mobile, in drawer) */}
+          <Link
+            href="/content-studio"
+            className="hidden md:flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/30 hover:scale-[1.02] transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-cyan-300 fill-current" />
+            <span>Create Content</span>
+          </Link>
+
+          {/* Notifications Dropdown Toggle */}
+          <div className="relative">
+            <button
+              onClick={() => setShowNotifs(!showNotifs)}
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors relative"
+            >
+              <Bell className="w-4 h-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
+              )}
+            </button>
+
+            {/* Notifications Flyout Drawer */}
+            {showNotifs && (
+              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 py-3 animate-in fade-in slide-in-from-top-2">
+                <div className="px-4 pb-2.5 border-b border-slate-800 flex items-center justify-between">
+                  <div className="font-bold text-sm text-white flex items-center gap-2">
+                    <span>Notifications</span>
+                    {unreadCount > 0 && (
+                      <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-extrabold">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </div>
+                  {unreadCount > 0 && (
+                    <button
+                      onClick={markAllNotificationsRead}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-medium"
+                    >
+                      <CheckCheck className="w-3 h-3" /> Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="max-h-72 overflow-y-auto divide-y divide-slate-800/60 custom-scrollbar">
+                  {notifications.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-slate-500">No notifications</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        onClick={() => markNotificationRead(n.id)}
+                        className={`p-3 text-xs hover:bg-slate-800/50 cursor-pointer transition-colors ${
+                          n.isRead ? 'opacity-70' : 'bg-indigo-950/20'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-semibold text-slate-200 mb-0.5">
+                          <span className="truncate pr-2">{n.title}</span>
+                          <span className="text-[10px] text-slate-500 shrink-0">{n.timestamp}</span>
+                        </div>
+                        <p className="text-slate-400 text-[11px] line-clamp-2 leading-relaxed">{n.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Account / Plan Badge */}
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 p-1 sm:pl-2 sm:pr-3 sm:py-1 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl transition-all"
+            >
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-cyan-400 text-white font-bold text-xs flex items-center justify-center shadow-inner shrink-0">
+                GP
+              </div>
+              <div className="text-left hidden sm:block">
+                <div className="text-xs font-bold text-white leading-tight">GrowthPilot Team</div>
+                <div className="text-[10px] text-cyan-400 font-semibold uppercase">{subscriptionPlan} PLAN</div>
+              </div>
+              <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5 hidden sm:block" />
+            </button>
+
+            {showUserMenu && (
+              <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in">
+                <div className="px-4 py-2 border-b border-slate-800">
+                  <p className="text-xs font-bold text-white">GrowthPilot Properties</p>
+                  <p className="text-[11px] text-slate-400 truncate">team@growthpilot.ai</p>
+                </div>
+                <Link
+                  href="/settings"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800"
+                >
+                  <Shield className="w-3.5 h-3.5 text-indigo-400" /> Account & API Keys
+                </Link>
+                <Link
+                  href="/admin"
+                  onClick={() => setShowUserMenu(false)}
+                  className="flex items-center gap-2 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800"
+                >
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" /> Admin Dashboard
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Slide-Out Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col animate-in slide-in-from-left duration-200">
+          <div className="p-4 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-black text-sm">
+                <Zap className="w-4 h-4 fill-current" />
+              </div>
+              <span className="font-extrabold text-white text-base">GrowthPilot AI</span>
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar">
+            {MOBILE_NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                >
+                  <Icon className="w-4 h-4 text-indigo-400" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+      )}
+    </div>
+  );
+}

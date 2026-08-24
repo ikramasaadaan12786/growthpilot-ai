@@ -1,0 +1,6 @@
+{
+  "appId": "com.growthpilot.ai",
+  "appName": "GrowthPilot AI",
+  "webDir": "out",
+  "bundledWebRuntime": false
+}

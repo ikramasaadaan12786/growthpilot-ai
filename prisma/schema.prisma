@@ -1,0 +1,419 @@
+// Prisma Schema for GrowthPilot AI
+// Supports PostgreSQL in production and SQLite for development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  name              String
+  avatar            String?
+  role              String             @default("USER") // USER, AGENCY, ADMIN
+  companyName       String?
+  industry          String?            @default("Real Estate & Business")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  
+  subscription      Subscription?
+  socialAccounts    SocialAccount[]
+  profiles          Profile[]
+  posts             Post[]
+  contents          Content[]
+  calendarItems     ContentCalendar[]
+  aiGenerations     AiGeneration[]
+  aiRecommendations AiRecommendation[]
+  competitors       Competitor[]
+  campaigns         Campaign[]
+  leads             Lead[]
+  notifications     Notification[]
+  reports           Report[]
+  auditLogs         AuditLog[]
+
+  @@map("users")
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                 String    @default("PRO") // FREE, PRO, AGENCY
+  status               String    @default("ACTIVE") // ACTIVE, TRIALING, PAST_DUE, CANCELED
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  stripePriceId        String?
+  currentPeriodStart   DateTime  @default(now())
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean   @default(false)
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@map("subscriptions")
+}
+
+model SocialAccount {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform        String       // INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK
+  accountId       String       // Platform internal ID
+  accountName     String
+  username        String
+  avatarUrl       String?
+  profileUrl      String?
+  followerCount   Int          @default(0)
+  followingCount  Int          @default(0)
+  postCount       Int          @default(0)
+  status          String       @default("CONNECTED") // CONNECTED, LIMITED_PERMISSIONS, TOKEN_EXPIRED, DISCONNECTED, SYNC_ERROR
+  lastSyncAt      DateTime?
+  dataSource      String?      @default("Official API")
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  oauthTokens     OAuthToken[]
+  posts           Post[]
+  growthMetrics   GrowthMetric[]
+
+  @@unique([userId, platform, accountId])
+  @@map("social_accounts")
+}
+
+model OAuthToken {
+  id              String        @id @default(cuid())
+  socialAccountId String
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  accessToken     String        // AES-256-GCM Encrypted
+  refreshToken    String?       // AES-256-GCM Encrypted
+  tokenType       String        @default("Bearer")
+  scopes          String        // Comma-separated official scopes
+  expiresAt       DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("oauth_tokens")
+}
+
+model Profile {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform        String
+  bio             String?
+  website         String?
+  category        String?
+  isVerified      Boolean   @default(false)
+  growthScore     Float     @default(85.0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("profiles")
+}
+
+model Post {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  socialAccountId String?
+  socialAccount   SocialAccount? @relation(fields: [socialAccountId], references: [id], onDelete: SetNull)
+  platform        String        // INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK
+  platformPostId  String?
+  contentType     String        // REEL, POST, VIDEO, STORY, CAROUSEL, ARTICLE
+  title           String?
+  caption         String
+  mediaUrl        String?
+  thumbnailUrl    String?
+  hashtags        String?
+  status          String        @default("PUBLISHED") // DRAFT, SCHEDULED, PUBLISHED, FAILED
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  metrics         PostMetric?
+  video           Video?
+
+  @@map("posts")
+}
+
+model Video {
+  id              String    @id @default(cuid())
+  postId          String    @unique
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  durationSeconds Int       @default(30)
+  aspectRatio     String    @default("9:16") // 9:16, 16:9, 1:1, 4:5
+  resolution      String    @default("1080x1920")
+  transcript      String?
+  hookText        String?
+  ctaText         String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("videos")
+}
+
+model PostMetric {
+  id              String    @id @default(cuid())
+  postId          String    @unique
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  views           Int       @default(0)
+  reach           Int       @default(0)
+  impressions     Int       @default(0)
+  likes           Int       @default(0)
+  comments        Int       @default(0)
+  shares          Int       @default(0)
+  saves           Int       @default(0)
+  clicks          Int       @default(0)
+  profileVisits   Int       @default(0)
+  followersGained Int       @default(0)
+  engagementRate  Float     @default(0.0)
+  recordedAt      DateTime  @default(now())
+
+  @@map("post_metrics")
+}
+
+model GrowthMetric {
+  id              String        @id @default(cuid())
+  socialAccountId String
+  socialAccount   SocialAccount @relation(fields: [socialAccountId], references: [id], onDelete: Cascade)
+  platform        String
+  followerCount   Int
+  netGrowth       Int           @default(0)
+  growthRate      Float         @default(0.0)
+  totalReach      Int           @default(0)
+  totalEngagement Int           @default(0)
+  avgEngagementRate Float       @default(0.0)
+  growthScore     Float         @default(80.0)
+  date            DateTime      @default(now())
+
+  @@map("growth_metrics")
+}
+
+model Content {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic           String
+  goal            String    // AWARENESS, LEADS, SALES, ENGAGEMENT
+  tone            String    @default("Professional & Inspiring")
+  language        String    @default("English") // English, Arabic, Urdu, Hindi
+  sourcePrompt    String
+  realEstateData  String?   // JSON object for real estate mode
+  instagramOutput String?   // JSON string with Reel script, caption, hook, CTA, hashtags
+  facebookOutput  String?   // JSON string with Post, video script, CTA, link copy
+  linkedinOutput  String?   // JSON string with Professional post, hook, analysis, CTA
+  tiktokOutput    String?   // JSON string with Short script, hook, caption, text, CTA
+  aiScoreIg       Int       @default(90)
+  aiScoreFb       Int       @default(85)
+  aiScoreLi       Int       @default(92)
+  aiScoreTt       Int       @default(88)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("content")
+}
+
+model ContentCalendar {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform        String    // INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK
+  contentType     String    // REEL, POST, VIDEO, STORY, CAROUSEL, ARTICLE
+  title           String
+  caption         String
+  mediaUrl        String?
+  scheduledFor    DateTime
+  bestTimeReason  String?   // e.g. "Optimal peak follower activity window"
+  status          String    @default("SCHEDULED") // DRAFT, SCHEDULED, PUBLISHED, FAILED
+  approvalStatus  String    @default("USER_REVIEW") // DRAFT, AI_OPTIMIZED, USER_REVIEW, APPROVED, SCHEDULED, PUBLISHED, ANALYZED, REJECTED
+  autoMode        String    @default("SEMI_AUTOMATIC") // MANUAL, SEMI_AUTOMATIC, AUTOMATIC
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("content_calendar")
+}
+
+model AiGeneration {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prompt          String
+  platform        String    @default("ALL")
+  generationType  String    // MULTI_PLATFORM, VIRAL_IDEAS, REAL_ESTATE, TREND_ANALYSIS, AD_COPY
+  result          String
+  tokensUsed      Int       @default(0)
+  model           String    @default("gpt-4o")
+  createdAt       DateTime  @default(now())
+
+  @@map("ai_generations")
+}
+
+model AiRecommendation {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform        String    // ALL, INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK
+  type            String    // BEST_TIME, CONTENT_GAP, HOOK_STRATEGY, LEAD_GEN, AUDIENCE_INSIGHT
+  title           String
+  recommendation  String
+  priority        String    @default("HIGH") // LOW, MEDIUM, HIGH, URGENT
+  impact          String?   // e.g. "+24% Reach estimated"
+  isDismissed     Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@map("ai_recommendations")
+}
+
+model Competitor {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  handle          String
+  platform        String    // INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK
+  name            String
+  avatarUrl       String?
+  followerCount   Int       @default(0)
+  postingFrequency String   @default("4 posts/week")
+  topFormats      String    // JSON array
+  strengths       String    // JSON array
+  weaknesses      String    // JSON array
+  contentGaps     String    // JSON array
+  opportunities   String    // JSON array
+  strategy        String    // Counter-strategy advice
+  lastAnalyzedAt  DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("competitors")
+}
+
+model Campaign {
+  id              String           @id @default(cuid())
+  userId          String
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  platform        String           // META, LINKEDIN, TIKTOK, MULTI
+  objective       String           // AWARENESS, TRAFFIC, ENGAGEMENT, LEADS, CONVERSIONS
+  budget          Float            @default(500.0)
+  dailyBudget     Float            @default(25.0)
+  status          String           @default("ACTIVE") // DRAFT, ACTIVE, PAUSED, COMPLETED
+  targetAudience  String           // JSON string of demographics & interests
+  adCopy          String           // JSON or text
+  headline        String?
+  cta             String           @default("LEARN_MORE")
+  startDate       DateTime         @default(now())
+  endDate         DateTime?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  metrics         CampaignMetric[]
+  leads           Lead[]
+
+  @@map("campaigns")
+}
+
+model CampaignMetric {
+  id              String    @id @default(cuid())
+  campaignId      String
+  campaign        Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  spend           Float     @default(0.0)
+  impressions     Int       @default(0)
+  reach           Int       @default(0)
+  clicks          Int       @default(0)
+  leads           Int       @default(0)
+  conversions     Int       @default(0)
+  cpc             Float     @default(0.0)
+  cpl             Float     @default(0.0)
+  roas            Float     @default(0.0)
+  date            DateTime  @default(now())
+
+  @@map("campaign_metrics")
+}
+
+model Lead {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId      String?
+  campaign        Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  name            String
+  email           String
+  phone           String?
+  platform        String    // INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK, WEBSITE
+  source          String    @default("Social Lead Ad")
+  status          String    @default("NEW") // NEW, CONTACTED, QUALIFIED, MEETING, NEGOTIATION, CONVERTED, LOST
+  value           Float     @default(0.0)
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@map("leads")
+}
+
+model Notification {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String    // MILESTONE, CONTENT_READY, SCHEDULED, PUBLISHED, CAMPAIGN_RESULT, WEEKLY_REPORT, GROWTH_OPPORTUNITY, ACCOUNT_DISCONNECTED, API_ERROR
+  title           String
+  message         String
+  actionUrl       String?
+  isRead          Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+
+  @@map("notifications")
+}
+
+model Report {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  periodStart     DateTime
+  periodEnd       DateTime
+  totalFollowers  Int
+  netGrowth       Int
+  totalReach      Int
+  totalViews      Int
+  totalEngagement Int
+  totalLeads      Int
+  bestPlatform    String
+  bestLeadPlatform String
+  bestContentTitle String
+  summary         String
+  nextWeekStrategy String
+  fullReportJson  String    // Detailed platform breakdown
+  createdAt       DateTime  @default(now())
+
+  @@map("reports")
+}
+
+model AutomationLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  platform    String   // ALL, INSTAGRAM, FACEBOOK, LINKEDIN, TIKTOK
+  actionType  String   // CONTENT_GENERATE, OPTIMIZATION, APPROVAL, SCHEDULE, PUBLISH, SYNC_METRICS, ERROR
+  message     String
+  status      String   @default("SUCCESS") // SUCCESS, PENDING, FAILED, WARNING
+  metadata    String?  // JSON string
+  createdAt   DateTime @default(now())
+
+  @@map("automation_logs")
+}
+
+model AuditLog {
+  id              String    @id @default(cuid())
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action          String    // AUTH, POST_PUBLISH, AUTOMATION_TOGGLE, CAMPAIGN_CREATE, OAUTH_REFRESH, SETTINGS_CHANGE
+  details         String
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime  @default(now())
+
+  @@map("audit_logs")
+}

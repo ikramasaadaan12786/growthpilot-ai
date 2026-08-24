@@ -1,0 +1,72 @@
+# GrowthPilot AI — Production Git Exclusion Rules
+
+# Environment Variables & Secret Vaults (CRITICAL: NEVER COMMIT)
+.env
+.env*.local
+.env.production
+.env.staging
+.env.test
+
+# SQLite Database Files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+prisma/dev.db
+prisma/dev.db-journal
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js Build Outputs
+.next/
+out/
+.vercel/
+
+# Desktop / Electron Build Artifacts
+dist/
+dist-electron/
+release/
+*.exe
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.zip
+*.blockmap
+
+# Mobile / Android Build Artifacts & Android SDK tools
+android/app/build/
+android/.gradle/
+android/build/
+android/local.properties
+android/app/src/main/assets/public/
+*.apk
+*.aab
+*.aar
+
+# Local Tools & Build Utilities
+tools/
+jdk-*/
+android-sdk/
+
+# Logs & Diagnostics
+*.log
+.system_generated/
+
+# OS / Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

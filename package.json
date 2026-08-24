@@ -1,0 +1,99 @@
+{
+  "name": "growthpilot-ai",
+  "version": "1.0.0",
+  "private": true,
+  "main": "desktop/main.js",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "desktop:dev": "concurrently \"next dev -p 3000\" \"wait-on http://localhost:3000 && electron desktop/main.js\"",
+    "desktop:start": "electron desktop/main.js",
+    "desktop:build": "next build && electron-builder --win --dir",
+    "desktop:installer": "next build && electron-builder --win nsis",
+    "desktop:portable": "next build && electron-builder --win portable",
+    "cap:export": "cross-env CAPACITOR_BUILD=true next build",
+    "cap:add": "cross-env CAPACITOR_BUILD=true next build && cap add android",
+    "cap:sync": "cross-env CAPACITOR_BUILD=true next build && cap sync android",
+    "cap:build": "cross-env CAPACITOR_BUILD=true next build && cap sync android",
+    "cap:open": "cap open android"
+  },
+  "build": {
+    "appId": "com.growthpilot.desktop",
+    "productName": "GrowthPilot AI",
+    "executableName": "GrowthPilot AI",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": false,
+    "files": [
+      "desktop/**/*",
+      ".next/**/*",
+      "public/**/*",
+      "prisma/**/*",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": ".next",
+        "to": ".next"
+      },
+      {
+        "from": "public",
+        "to": "public"
+      },
+      {
+        "from": "prisma",
+        "to": "prisma"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GrowthPilot AI"
+    }
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@prisma/client": "^5.19.1",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "framer-motion": "^11.5.4",
+    "lucide-react": "^0.439.0",
+    "next": "14.2.10",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7",
+    "tailwind-merge": "^2.5.2"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^20.16.5",
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^10.0.5",
+    "cross-env": "^10.1.0",
+    "electron": "^43.4.1",
+    "electron-builder": "^26.15.3",
+    "postcss": "^8.4.45",
+    "prisma": "^5.19.1",
+    "tailwindcss": "^3.4.11",
+    "typescript": "^5.5.4",
+    "wait-on": "^9.1.0"
+  }
+}
