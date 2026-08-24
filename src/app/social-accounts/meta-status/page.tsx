@@ -111,7 +111,7 @@ export default function MetaStatusPage() {
               <div className="font-bold text-white flex items-center gap-1.5">
                 <span>Instagram Content Publishing (Reels & Carousels)</span>
               </div>
-              <div className="text-[11px] text-slate-400 mt-0.5">Scope: `instagram_content_publishing`</div>
+              <div className="text-[11px] text-slate-400 mt-0.5">Capability: Direct API Publishing (Non-blocking Capability)</div>
             </div>
             <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/20 shrink-0">
               🟢 Available

@@ -223,27 +223,29 @@ async function runMetaIntegrationTests() {
     assert(false, 'Test 10: Instagram Personal Account Rejection', err.message);
   }
 
-  // Test 11: Meta Production Scopes Audit (Task 2 & 10 Verification)
+  // Test 11: Minimal Instagram Initial OAuth Scopes Verification
   try {
     const igScopes = ig.requiredScopes;
-    const fbScopes = fb.requiredScopes;
 
     const noInsights = !igScopes.includes('instagram_manage_insights');
     const noOldPublish = !igScopes.includes('instagram_content_publish');
-    const hasPublishing = igScopes.includes('instagram_content_publishing');
+    const noPublishing = !igScopes.includes('instagram_content_publishing');
+    const noMessages = !igScopes.includes('instagram_manage_messages');
     const hasBasic = igScopes.includes('instagram_basic');
-    const hasPages = igScopes.includes('pages_show_list') && igScopes.includes('pages_read_engagement');
+    const hasShowList = igScopes.includes('pages_show_list');
+    const hasReadEngagement = igScopes.includes('pages_read_engagement');
     const hasBusiness = igScopes.includes('business_management');
+    const exactLength = igScopes.length === 4;
 
-    const isAllScopesValid = noInsights && noOldPublish && hasPublishing && hasBasic && hasPages && hasBusiness;
+    const isAllScopesValid = noInsights && noOldPublish && noPublishing && noMessages && hasBasic && hasShowList && hasReadEngagement && hasBusiness && exactLength;
 
     assert(
       isAllScopesValid,
-      'Test 11: Production Meta Scopes Verification',
-      'instagram_manage_insights and instagram_content_publish removed; instagram_content_publishing and business_management active'
+      'Test 11: Minimal Instagram Initial OAuth Scopes',
+      `Instagram initial OAuth requests ONLY [${igScopes.join(', ')}] (publishing/insights/messaging removed from initial login)`
     );
   } catch (err: any) {
-    assert(false, 'Test 11: Production Meta Scopes Verification', err.message);
+    assert(false, 'Test 11: Minimal Instagram Initial OAuth Scopes', err.message);
   }
 
   // Test 12: Production Redirect URI Hierarchy & Protection (Task 4 Verification)

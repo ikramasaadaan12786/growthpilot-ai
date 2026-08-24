@@ -102,7 +102,7 @@ async function runRealLoginTestSuite() {
       accessToken: 'EAAGNO41x9ZAgBAKz7_sample_token',
       refreshToken: 'r_token_984712',
       expiresIn: 5184000,
-      scope: 'instagram_basic,instagram_content_publishing,pages_show_list,pages_read_engagement,business_management'
+      scope: 'instagram_basic,pages_show_list,pages_read_engagement,business_management'
     };
     const hasTokens = Boolean(mockTokens.accessToken && mockTokens.expiresIn > 0);
     recordTest(5, 'Server-Side Token Exchange Handshake', hasTokens, true, false, 'Structured token payload extracted safely on server');

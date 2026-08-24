@@ -44,7 +44,7 @@ export default function SocialAccountsPage() {
       } else if (err) {
         let msg = decodeURIComponent(err);
         if (err === 'META_INVALID_SCOPE') {
-          msg = 'Meta Scope Notice: Invalid scope requested. GrowthPilot requests only approved permissions (instagram_basic, instagram_content_publishing, pages_show_list, pages_read_engagement, business_management).';
+          msg = 'Meta Scope Notice: Invalid scope requested. GrowthPilot requests only verified permissions (instagram_basic, pages_show_list, pages_read_engagement, business_management).';
         } else if (err === 'META_PERMISSION_DENIED') {
           msg = 'Meta Access Denied: The login was cancelled or required permissions were declined in Facebook Login.';
         } else if (err === 'NO_FACEBOOK_PAGE_FOUND') {
