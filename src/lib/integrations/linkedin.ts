@@ -56,7 +56,7 @@ export class LinkedInIntegration extends BaseSocialIntegration {
   /**
    * Generates official LinkedIn OAuth 2.0 authorization URL with space-delimited basic scopes (openid profile email)
    */
-  getAuthorizationUrl(state: string): string {
+  getAuthorizationUrl(state: string, _codeChallenge?: string, _isSandbox?: boolean): string {
     const clientId = this.getClientId();
     if (!clientId || clientId === 'growthpilot_linkedin_client_id' || clientId.includes('placeholder')) {
       throw new Error('LINKEDIN_CLIENT_ID_MISSING: LINKEDIN_CLIENT_ID environment variable is missing or unconfigured.');
@@ -80,7 +80,7 @@ export class LinkedInIntegration extends BaseSocialIntegration {
   /**
    * Exchanges authorization code for long-lived OAuth access tokens
    */
-  async exchangeCodeForTokens(code: string): Promise<AuthTokens> {
+  async exchangeCodeForTokens(code: string, _codeVerifier?: string, _isSandbox?: boolean): Promise<AuthTokens> {
     const clientId = this.getClientId();
     const clientSecret = this.getClientSecret();
     const redirectUri = this.getRedirectUri();

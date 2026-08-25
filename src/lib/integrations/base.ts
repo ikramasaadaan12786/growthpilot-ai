@@ -69,8 +69,8 @@ export abstract class BaseSocialIntegration {
   abstract readonly requiredScopes: string[];
   abstract readonly documentationUrl: string;
 
-  abstract getAuthorizationUrl(state: string): string;
-  abstract exchangeCodeForTokens(code: string): Promise<AuthTokens>;
+  abstract getAuthorizationUrl(state: string, codeChallenge?: string, isSandbox?: boolean): string;
+  abstract exchangeCodeForTokens(code: string, codeVerifier?: string, isSandbox?: boolean): Promise<AuthTokens>;
   abstract refreshToken(refreshToken: string): Promise<AuthTokens>;
   abstract getProfile(accessToken: string): Promise<PlatformProfile>;
   abstract getMetrics(accessToken: string, accountId: string): Promise<PlatformMetrics>;

@@ -10,6 +10,28 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { platform: string } }
 ) {
+  const urlString = req.url || 'http://localhost:3000';
+  const url = new URL(urlString);
+
+  // Parse state first so we can determine error redirect destination early
+  const stateParam = url.searchParams.get('state') || '';
+  const stateParts = stateParam.split('_');
+  const clientType = stateParts.length >= 2 ? stateParts[1] : 'web';
+  const isSandbox = clientType === 'tiktok-demo' || clientType === 'sandbox' || clientType.includes('sandbox');
+
+  // Helper: return error redirect to the appropriate destination
+  function errorRedirect(errorCode: string, detail?: string): NextResponse {
+    const dest = isSandbox ? '/tiktok-review-demo' : '/social-accounts';
+    const redirectUrl = new URL(dest, urlString);
+    redirectUrl.searchParams.set('error', errorCode);
+    if (detail) redirectUrl.searchParams.set('message', detail.substring(0, 200));
+    redirectUrl.searchParams.set('platform', params?.platform || '');
+    // Clear the PKCE cookie on error
+    const res = NextResponse.redirect(redirectUrl);
+    res.cookies.set('tt_pkce', '', { maxAge: 0, path: '/' });
+    return res;
+  }
+
   try {
     const rawPlatform = params?.platform?.toUpperCase();
     const validPlatforms: SocialPlatform[] = ['INSTAGRAM', 'FACEBOOK', 'LINKEDIN', 'TIKTOK'];
@@ -19,40 +41,63 @@ export async function GET(
     }
 
     const platform = rawPlatform as SocialPlatform;
-    const urlString = req.url || 'http://localhost:3000';
-    const url = new URL(urlString);
     const code = url.searchParams.get('code');
     const errorParam = url.searchParams.get('error');
     const errorReason = url.searchParams.get('error_reason') || url.searchParams.get('error_description');
 
     if (errorParam || !code) {
-      const redirectUrl = new URL('/social-accounts', urlString);
       const codeType = errorParam === 'access_denied' ? 'META_PERMISSION_DENIED' : (errorParam || 'MISSING_AUTHORIZATION_CODE');
-      redirectUrl.searchParams.set('error', codeType);
-      if (errorReason) redirectUrl.searchParams.set('details', errorReason);
-      redirectUrl.searchParams.set('platform', platform);
-      return NextResponse.redirect(redirectUrl);
+      return errorRedirect(codeType, errorReason || undefined);
     }
 
     const adapter = platformRegistry.getAdapter(platform);
-    
-    // Parse state parameter to detect client type and sandbox origin
-    const stateParam = url.searchParams.get('state') || '';
-    const stateParts = stateParam.split('_');
-    const clientType = stateParts.length >= 2 ? stateParts[1] : 'web';
-    const isSandbox = clientType === 'tiktok-demo' || clientType === 'sandbox' || clientType.includes('sandbox');
 
-    // 1. Exchange code for tokens with matched sandbox/production credentials
-    const tokens = await (adapter as any).exchangeCodeForTokens(code, undefined, isSandbox);
-    
-    // 2. Fetch authenticated profile details
-    const profile = await adapter.getProfile(tokens.accessToken);
-    
-    // 3. Encrypt sensitive tokens using AES-256-GCM
+    // For TikTok: read PKCE verifier from httpOnly cookie set during /authorize
+    let codeVerifier: string | undefined;
+    if (platform === 'TIKTOK') {
+      const pkceRaw = req.cookies.get('tt_pkce')?.value;
+      if (pkceRaw) {
+        try {
+          const pkceData = JSON.parse(pkceRaw);
+          codeVerifier = pkceData.verifier;
+
+          // Validate state matches what was stored
+          if (pkceData.state && pkceData.state !== stateParam) {
+            console.warn('[TikTok OAuth] State mismatch. Expected:', pkceData.state, 'Got:', stateParam);
+            // State mismatch is a CSRF signal — reject
+            return errorRedirect('TIKTOK_STATE_MISMATCH', 'OAuth state parameter mismatch. Possible CSRF. Please retry.');
+          }
+        } catch (e) {
+          console.warn('[TikTok OAuth] Failed to parse tt_pkce cookie:', (e as any).message);
+        }
+      } else {
+        console.warn('[TikTok OAuth] No tt_pkce cookie found — proceeding without PKCE verifier');
+      }
+    }
+
+    // Exchange authorization code for tokens
+    let tokens;
+    try {
+      tokens = await (adapter as any).exchangeCodeForTokens(code, codeVerifier, isSandbox);
+    } catch (tokenErr: any) {
+      console.error('[TikTok OAuth] Token exchange error:', tokenErr.message);
+      return errorRedirect('TOKEN_EXCHANGE_FAILED', tokenErr.message);
+    }
+
+    // Fetch authenticated profile details
+    let profile;
+    try {
+      profile = await adapter.getProfile(tokens.accessToken);
+    } catch (profileErr: any) {
+      console.error('[TikTok OAuth] Profile fetch error:', profileErr.message);
+      return errorRedirect('PROFILE_FETCH_FAILED', profileErr.message);
+    }
+
+    // Encrypt sensitive tokens using AES-256-GCM
     const encryptedAccessToken = encryptToken(tokens.accessToken);
     const encryptedRefreshToken = tokens.refreshToken ? encryptToken(tokens.refreshToken) : null;
 
-    // 4. Upsert default user & social account in database
+    // Upsert default user & social account in database
     const user = await prisma.user.upsert({
       where: { email: 'team@growthpilot.ai' },
       update: {},
@@ -97,7 +142,7 @@ export async function GET(
       }
     });
 
-    // 5. Store Encrypted OAuth Tokens
+    // Store Encrypted OAuth Tokens (replace any existing)
     await prisma.oAuthToken.deleteMany({
       where: { socialAccountId: socialAccount.id }
     });
@@ -112,12 +157,12 @@ export async function GET(
       }
     });
 
-    // 6. Security Audit Log
+    // Security Audit Log
     await prisma.auditLog.create({
       data: {
         userId: user.id,
         action: 'OAUTH_CONNECT',
-        details: `Official ${platform} account @${profile.username} connected via OAuth 2.0 (Client: ${clientType}). Tokens encrypted AES-256-GCM.`,
+        details: `Official ${platform} account @${profile.username} connected via OAuth 2.0 (Client: ${clientType}${isSandbox ? ', Sandbox Mode' : ''}). Tokens encrypted AES-256-GCM.`,
         ipAddress: '127.0.0.1',
         userAgent: req.headers.get('user-agent') || 'GrowthPilot Agent'
       }
@@ -158,30 +203,36 @@ export async function GET(
 </body>
 </html>`;
 
-      return new NextResponse(htmlContent, {
+      const htmlRes = new NextResponse(htmlContent, {
         headers: { 'Content-Type': 'text/html; charset=utf-8' }
       });
+      htmlRes.cookies.set('tt_pkce', '', { maxAge: 0, path: '/' });
+      return htmlRes;
     }
 
-    // Support TikTok Review Demo return path
+    // TikTok Review Demo return path
     if (clientType === 'tiktok-demo' || clientType === 'demo') {
-      return NextResponse.redirect(new URL(`/tiktok-review-demo?connected=${platform}&success=true`, urlString));
+      const successUrl = new URL(`/tiktok-review-demo?connected=${platform}&success=true`, urlString);
+      const res = NextResponse.redirect(successUrl);
+      res.cookies.set('tt_pkce', '', { maxAge: 0, path: '/' });
+      return res;
     }
 
     // Default Web redirect
-    return NextResponse.redirect(new URL(`/social-accounts?connected=${platform}&success=true`, urlString));
+    const defaultRes = NextResponse.redirect(new URL(`/social-accounts?connected=${platform}&success=true`, urlString));
+    defaultRes.cookies.set('tt_pkce', '', { maxAge: 0, path: '/' });
+    return defaultRes;
+
   } catch (error: any) {
-    console.error('OAuth callback processing error:', error);
-    const urlString = req.url || 'http://localhost:3000';
-    const redirectUrl = new URL('/social-accounts', urlString);
-    
-    let errorCode = 'OAUTH_AUTHENTICATION_FAILED';
+    console.error('[OAuth callback] Unexpected error:', error);
     const msg = error.message || '';
-    if (msg.includes('Invalid Scopes') || msg.includes('instagram_manage_insights') || msg.includes('scope')) {
+
+    let errorCode = 'OAUTH_AUTHENTICATION_FAILED';
+    if (msg.includes('Invalid Scopes') || msg.includes('scope')) {
       errorCode = 'META_INVALID_SCOPE';
-    } else if (msg.includes('redirect_uri') || msg.includes('redirect mismatch') || msg.includes('Can\'t Load URL')) {
+    } else if (msg.includes('redirect_uri') || msg.includes('redirect mismatch')) {
       errorCode = 'META_REDIRECT_MISMATCH';
-    } else if (msg.includes('permission') || msg.includes('access denied') || msg.includes('Permissions error')) {
+    } else if (msg.includes('permission') || msg.includes('access denied')) {
       errorCode = 'META_PERMISSION_DENIED';
     } else if (msg.includes('NO_FACEBOOK_PAGE')) {
       errorCode = 'NO_FACEBOOK_PAGE_FOUND';
@@ -193,9 +244,6 @@ export async function GET(
       errorCode = 'DATABASE_PERSISTENCE_FAILED';
     }
 
-    redirectUrl.searchParams.set('error', errorCode);
-    redirectUrl.searchParams.set('message', msg);
-    redirectUrl.searchParams.set('platform', params?.platform || '');
-    return NextResponse.redirect(redirectUrl);
+    return errorRedirect(errorCode, msg);
   }
 }

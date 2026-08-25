@@ -42,7 +42,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
   /**
    * Generates official Meta OAuth 2.0 authorization URL
    */
-  getAuthorizationUrl(state: string): string {
+  getAuthorizationUrl(state: string, _codeChallenge?: string, _isSandbox?: boolean): string {
     const appId = this.getAppId() || 'growthpilot_meta_app_id';
     const redirectUri = this.getRedirectUri();
     const scopeParam = encodeURIComponent(this.requiredScopes.join(','));
@@ -52,7 +52,7 @@ export class InstagramIntegration extends BaseSocialIntegration {
   /**
    * Exchanges authorization code for short-lived token and upgrades to long-lived 60-day token
    */
-  async exchangeCodeForTokens(code: string): Promise<AuthTokens> {
+  async exchangeCodeForTokens(code: string, _codeVerifier?: string, _isSandbox?: boolean): Promise<AuthTokens> {
     const appId = this.getAppId();
     const appSecret = this.getAppSecret();
     const redirectUri = this.getRedirectUri();

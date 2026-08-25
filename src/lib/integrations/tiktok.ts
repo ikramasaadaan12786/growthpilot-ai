@@ -119,43 +119,82 @@ export class TikTokIntegration extends BaseSocialIntegration {
       }
     }
 
+    // Safe diagnostic: log non-secret fields only
+    console.log(`[TikTok Token Exchange] mode=${isSandbox ? 'SANDBOX' : 'PRODUCTION'} client_key_prefix=${clientKey.substring(0, 4)}**** redirect_uri=${redirectUri} pkce=${codeVerifier ? 'YES' : 'NO'}`);
+
+    const tokenEndpoint = `${this.apiBase}/oauth/token/`;
+
+    const params: Record<string, string> = {
+      client_key: clientKey,
+      client_secret: clientSecret,
+      code,
+      grant_type: 'authorization_code',
+      redirect_uri: redirectUri
+    };
+
+    // Only include code_verifier if it was provided (PKCE)
+    if (codeVerifier) {
+      params.code_verifier = codeVerifier;
+    }
+
+    let res: Response;
+    let rawBody: string;
     try {
-      const params: Record<string, string> = {
-        client_key: clientKey,
-        client_secret: clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri
-      };
-
-      if (codeVerifier) {
-        params.code_verifier = codeVerifier;
-      }
-
-      const res = await fetch(`${this.apiBase}/oauth/token/`, {
+      res = await fetch(tokenEndpoint, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cache-Control': 'no-cache'
+        },
         body: new URLSearchParams(params).toString()
       });
-
-      const data = await res.json();
-      if (!res.ok || data.error?.code !== 'ok') {
-        throw new Error(data.error?.message || data.error_description || 'TikTok OAuth token exchange failed');
-      }
-
-      const tokenData = data.data || {};
-      return {
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token,
-        expiresIn: tokenData.expires_in || 86400,
-        tokenType: tokenData.token_type || 'Bearer',
-        scope: tokenData.scope || this.requiredScopes.join(',')
-      };
-    } catch (err: any) {
-      console.error('TikTok exchangeCodeForTokens error:', err.message);
-      throw new Error(`TikTok token exchange failed: ${err.message}`);
+      rawBody = await res.text();
+    } catch (fetchErr: any) {
+      throw new Error(`TIKTOK_NETWORK_ERROR: Failed to reach TikTok token endpoint: ${fetchErr.message}`);
     }
+
+    let data: any;
+    try {
+      data = JSON.parse(rawBody);
+    } catch {
+      throw new Error(`TIKTOK_INVALID_RESPONSE: Token endpoint returned non-JSON (HTTP ${res.status}): ${rawBody.substring(0, 300)}`);
+    }
+
+    // TikTok success: { data: { access_token, ... }, error: { code: "ok" } }
+    // TikTok error:   { data: {}, error: { code: "...", message: "...", log_id: "..." } }
+    const errorCode = data?.error?.code;
+    const isSuccess = res.ok && (errorCode === 'ok' || errorCode === 0 || errorCode === undefined);
+
+    if (!isSuccess) {
+      // Surface safe diagnostic fields — never log code, client_secret, or access_token
+      const tiktokError = data?.error || {};
+      const diagMsg = [
+        `HTTP ${res.status}`,
+        tiktokError.code ? `code=${tiktokError.code}` : '',
+        tiktokError.message ? `message="${tiktokError.message}"` : '',
+        tiktokError.log_id ? `log_id=${tiktokError.log_id}` : ''
+      ].filter(Boolean).join(' | ');
+
+      console.error(`[TikTok Token Exchange FAILED] ${diagMsg}`);
+      throw new Error(`TIKTOK_TOKEN_ERROR [${diagMsg}]`);
+    }
+
+    const tokenData = data.data || {};
+    if (!tokenData.access_token) {
+      throw new Error(`TIKTOK_TOKEN_ERROR: Token exchange succeeded but no access_token in response`);
+    }
+
+    console.log(`[TikTok Token Exchange] SUCCESS mode=${isSandbox ? 'SANDBOX' : 'PRODUCTION'} scope="${tokenData.scope || 'unknown'}"`);
+
+    return {
+      accessToken: tokenData.access_token,
+      refreshToken: tokenData.refresh_token,
+      expiresIn: tokenData.expires_in || 86400,
+      tokenType: tokenData.token_type || 'Bearer',
+      scope: tokenData.scope || this.requiredScopes.join(',')
+    };
   }
+
 
   /**
    * Refreshes TikTok access token using refresh_token

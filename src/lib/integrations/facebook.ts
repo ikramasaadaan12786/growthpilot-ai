@@ -41,7 +41,7 @@ export class FacebookIntegration extends BaseSocialIntegration {
   /**
    * Generates official Meta OAuth 2.0 authorization URL for Facebook Pages
    */
-  getAuthorizationUrl(state: string): string {
+  getAuthorizationUrl(state: string, _codeChallenge?: string, _isSandbox?: boolean): string {
     const appId = this.getAppId() || 'growthpilot_meta_app_id';
     const redirectUri = this.getRedirectUri();
     const scopeParam = encodeURIComponent(this.requiredScopes.join(','));
@@ -51,7 +51,7 @@ export class FacebookIntegration extends BaseSocialIntegration {
   /**
    * Exchanges authorization code for long-lived access token
    */
-  async exchangeCodeForTokens(code: string): Promise<AuthTokens> {
+  async exchangeCodeForTokens(code: string, _codeVerifier?: string, _isSandbox?: boolean): Promise<AuthTokens> {
     const appId = this.getAppId();
     const appSecret = this.getAppSecret();
     const redirectUri = this.getRedirectUri();

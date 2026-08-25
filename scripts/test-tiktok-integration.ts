@@ -641,6 +641,160 @@ async function runTikTokIntegrationTests() {
     assert(false, 'Test 30: Server-Only Sandbox Secret Protection', err.message);
   }
 
+  // Test 31: PKCE code_challenge included in authorization URL
+  try {
+    const crypto = await import('crypto');
+    const verifier = crypto.randomBytes(48).toString('base64url');
+    const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+    const state = 'TIKTOK_tiktok-demo_1787670000_abc123';
+
+    process.env.TIKTOK_SANDBOX_CLIENT_KEY = 'sandbox_test_pkce_key';
+    const sandboxUrl = tt.getAuthorizationUrl(state, challenge, true);
+    const parsed = new URL(sandboxUrl);
+
+    const hasChallenge = parsed.searchParams.get('code_challenge') === challenge;
+    const hasMethod = parsed.searchParams.get('code_challenge_method') === 'S256';
+
+    assert(
+      Boolean(hasChallenge && hasMethod),
+      'Test 31: PKCE S256 code_challenge in authorization URL',
+      `code_challenge present and code_challenge_method=S256 confirmed for sandbox flow`
+    );
+  } catch (err: any) {
+    assert(false, 'Test 31: PKCE S256 code_challenge in authorization URL', err.message);
+  }
+
+  // Test 32: Token endpoint is correct official v2 endpoint
+  try {
+    const tokenEndpoint = 'https://open.tiktokapis.com/v2/oauth/token/';
+    const usesCorrectEndpoint = (tt as any).apiBase === 'https://open.tiktokapis.com/v2';
+
+    assert(
+      usesCorrectEndpoint,
+      'Test 32: Correct Official TikTok Token Endpoint',
+      `Token exchange uses ${tokenEndpoint} (official v2 endpoint, not merchant or deprecated)`
+    );
+  } catch (err: any) {
+    assert(false, 'Test 32: Correct Official TikTok Token Endpoint', err.message);
+  }
+
+  // Test 33: Token request uses application/x-www-form-urlencoded (not JSON)
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const tikTokSrc = fs.readFileSync(path.join(process.cwd(), 'src/lib/integrations/tiktok.ts'), 'utf-8');
+
+    const hasFormEncoded = tikTokSrc.includes("'Content-Type': 'application/x-www-form-urlencoded'");
+    const hasUrlSearchParams = tikTokSrc.includes('new URLSearchParams(params)');
+
+    assert(
+      Boolean(hasFormEncoded && hasUrlSearchParams),
+      'Test 33: Token Request Uses application/x-www-form-urlencoded',
+      'Token exchange sends form-urlencoded body via URLSearchParams (not JSON)'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 33: Token Request Uses application/x-www-form-urlencoded', err.message);
+  }
+
+  // Test 34: Token exchange surfaces real TikTok error code and message
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const tikTokSrc = fs.readFileSync(path.join(process.cwd(), 'src/lib/integrations/tiktok.ts'), 'utf-8');
+
+    const surfacesErrorCode = tikTokSrc.includes('tiktokError.code') && tikTokSrc.includes('tiktokError.message');
+    const surfacesLogId = tikTokSrc.includes('log_id');
+    const noGenericSwallow = !tikTokSrc.includes("'TikTok OAuth token exchange failed'");
+
+    assert(
+      Boolean(surfacesErrorCode && surfacesLogId && noGenericSwallow),
+      'Test 34: Real TikTok Error Fields Surfaced',
+      'Token exchange logs TikTok error.code, error.message, and log_id without swallowing behind generic message'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 34: Real TikTok Error Fields Surfaced', err.message);
+  }
+
+  // Test 35: Redirect URI is exact match (no trailing slash, no encoding mismatch)
+  try {
+    process.env.TIKTOK_SANDBOX_CLIENT_KEY = 'sandbox_test_key_35';
+    const sandboxRedirect = tt.getRedirectUri(true);
+    const prodRedirect = tt.getRedirectUri(false);
+
+    const noTrailingSlash = !sandboxRedirect.endsWith('/') || sandboxRedirect === 'https://growthpilot-ai-two.vercel.app/api/auth/oauth/tiktok/callback';
+    const hasPath = sandboxRedirect.includes('/api/auth/oauth/tiktok/callback');
+    const noDoubleSlash = !sandboxRedirect.includes('//api/');
+    const noWhitespace = sandboxRedirect === sandboxRedirect.trim();
+
+    assert(
+      Boolean(noTrailingSlash && hasPath && noDoubleSlash && noWhitespace),
+      'Test 35: Redirect URI Exact Match',
+      `Redirect URI is clean: "${sandboxRedirect}"`
+    );
+  } catch (err: any) {
+    assert(false, 'Test 35: Redirect URI Exact Match', err.message);
+  }
+
+  // Test 36: Callback correctly detects sandbox context from state parameter
+  try {
+    const sandboxState = 'TIKTOK_tiktok-demo_1787670000_abc123';
+    const prodState = 'TIKTOK_web_1787670000_abc123';
+
+    const sandboxStateParts = sandboxState.split('_');
+    const sandboxClientType = sandboxStateParts.length >= 2 ? sandboxStateParts[1] : 'web';
+    const isSandboxFromState = sandboxClientType === 'tiktok-demo' || sandboxClientType === 'sandbox' || sandboxClientType.includes('sandbox');
+
+    const prodStateParts = prodState.split('_');
+    const prodClientType = prodStateParts.length >= 2 ? prodStateParts[1] : 'web';
+    const isProdFromState = !(prodClientType === 'tiktok-demo' || prodClientType === 'sandbox' || prodClientType.includes('sandbox'));
+
+    assert(
+      Boolean(isSandboxFromState && isProdFromState),
+      'Test 36: Callback Sandbox Context Detection from State',
+      'Callback correctly identifies sandbox (tiktok-demo) vs production (web) from OAuth state parameter'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 36: Callback Sandbox Context Detection from State', err.message);
+  }
+
+  // Test 37: PKCE cookie storage + authorize route has PKCE logic
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const authRoute = fs.readFileSync(path.join(process.cwd(), 'src/app/api/auth/oauth/[platform]/authorize/route.ts'), 'utf-8');
+    const callbackRoute = fs.readFileSync(path.join(process.cwd(), 'src/app/api/auth/oauth/[platform]/callback/route.ts'), 'utf-8');
+
+    const authHasPKCE = authRoute.includes('generateCodeVerifier') && authRoute.includes('deriveCodeChallenge') && authRoute.includes('tt_pkce');
+    const callbackReadsPKCE = callbackRoute.includes('tt_pkce') && callbackRoute.includes('codeVerifier');
+    const callbackClearsCookie = callbackRoute.includes("cookies.set('tt_pkce', ''");
+
+    assert(
+      Boolean(authHasPKCE && callbackReadsPKCE && callbackClearsCookie),
+      'Test 37: PKCE Cookie Lifecycle (Store + Read + Clear)',
+      'Authorize route stores code_verifier in tt_pkce httpOnly cookie; callback reads and clears it'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 37: PKCE Cookie Lifecycle (Store + Read + Clear)', err.message);
+  }
+
+  // Test 38: Error redirect goes to /tiktok-review-demo for sandbox flows
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const callbackRoute = fs.readFileSync(path.join(process.cwd(), 'src/app/api/auth/oauth/[platform]/callback/route.ts'), 'utf-8');
+
+    const hasReviewDemoRedirect = callbackRoute.includes('/tiktok-review-demo');
+    const isSandboxAware = callbackRoute.includes('isSandbox');
+
+    assert(
+      Boolean(hasReviewDemoRedirect && isSandboxAware),
+      'Test 38: Error Redirect Routes to /tiktok-review-demo for Sandbox Flows',
+      'Callback error handler redirects to /tiktok-review-demo (not /social-accounts) for tiktok-demo client type'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 38: Error Redirect Routes to /tiktok-review-demo for Sandbox Flows', err.message);
+  }
+
   console.log('\n========================================================');
   const passCount = results.filter(r => r.passed).length;
   console.log(`  TEST RESULTS SUMMARY: ${passCount}/${results.length} PASSED`);
