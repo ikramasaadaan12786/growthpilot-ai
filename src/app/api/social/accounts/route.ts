@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
     const dbAccounts = await prisma.socialAccount.findMany({
       include: {
         oauthTokens: true
+      },
+      orderBy: {
+        updatedAt: 'desc'
       }
     });
 

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { 
   CheckCircle2, 
@@ -20,7 +21,10 @@ import {
   Terminal,
   Film,
   FileCheck,
-  Globe
+  Globe,
+  AlertCircle,
+  KeyRound,
+  CheckCircle
 } from 'lucide-react';
 import { PlatformIcon } from '@/components/common/PlatformIcon';
 import { SocialAccountData } from '@/types';
@@ -65,13 +69,18 @@ const DEMO_VIDEOS: DemoVideoOption[] = [
   }
 ];
 
-export default function TikTokReviewDemoPage() {
+function TikTokReviewDemoContent() {
+  const searchParams = useSearchParams();
   const [account, setAccount] = useState<SocialAccountData | null>(null);
   const [isLoadingAccount, setIsLoadingAccount] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<DemoVideoOption>(DEMO_VIDEOS[0]);
   const [customVideoUrl, setCustomVideoUrl] = useState('');
   const [customCaption, setCustomCaption] = useState(DEMO_VIDEOS[0].caption);
   const [uploadMode, setUploadMode] = useState<'DRAFT' | 'DIRECT'>('DRAFT');
+
+  // URL notification banners
+  const [callbackSuccess, setCallbackSuccess] = useState(false);
+  const [callbackError, setCallbackError] = useState<{ code: string; message: string } | null>(null);
 
   // Upload progress states
   const [uploadState, setUploadState] = useState<'IDLE' | 'INITIALIZING' | 'UPLOADING' | 'SUCCESS' | 'ERROR'>('IDLE');
@@ -87,13 +96,33 @@ export default function TikTokReviewDemoPage() {
   const fetchTikTokAccount = async () => {
     setIsLoadingAccount(true);
     try {
-      const res = await fetch('/api/social/accounts');
+      // 1. Check dedicated real-time Sandbox status endpoint first (bypasses all caches)
+      const sandboxRes = await fetch(`/api/tiktok-sandbox-status?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store' }
+      });
+      const sandboxData = await sandboxRes.json();
+
+      if (sandboxData.success && sandboxData.sandbox_account_connected && sandboxData.account) {
+        setAccount(sandboxData.account);
+        addLog(`✓ Verified active TikTok Sandbox account: ${sandboxData.account.username} (${sandboxData.account.accountName})`);
+        setIsLoadingAccount(false);
+        return;
+      }
+
+      // 2. Check general social accounts endpoint as fallback
+      const res = await fetch(`/api/social/accounts?t=${Date.now()}`, {
+        cache: 'no-store',
+        headers: { 'Cache-Control': 'no-cache, no-store' }
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.accounts)) {
         const ttAccount = data.accounts.find((a: SocialAccountData) => a.platform === 'TIKTOK');
-        setAccount(ttAccount || null);
-        if (ttAccount && ttAccount.status === 'REAL_CONNECTED') {
+        if (ttAccount && (ttAccount.status === 'REAL_CONNECTED' || ttAccount.status === 'CONNECTED')) {
+          setAccount(ttAccount);
           addLog(`✓ Verified active TikTok account: ${ttAccount.username} (${ttAccount.accountName})`);
+        } else {
+          setAccount(null);
         }
       }
     } catch (err: any) {
@@ -104,9 +133,28 @@ export default function TikTokReviewDemoPage() {
   };
 
   useEffect(() => {
+    // Process search parameters from OAuth callback redirect
+    const isConnectedParam = searchParams.get('connected');
+    const isSuccessParam = searchParams.get('success');
+    const errorParam = searchParams.get('error');
+    const messageParam = searchParams.get('message') || searchParams.get('details');
+
+    if (isConnectedParam === 'TIKTOK' && isSuccessParam === 'true') {
+      setCallbackSuccess(true);
+      addLog('✓ Official TikTok Sandbox OAuth 2.0 PKCE Handshake Completed Successfully!');
+    }
+
+    if (errorParam) {
+      setCallbackError({
+        code: errorParam,
+        message: messageParam || 'OAuth authorization was not completed. Please try again.'
+      });
+      addLog(`✗ OAuth Callback Notice: [${errorParam}] ${messageParam || ''}`);
+    }
+
     fetchTikTokAccount();
     addLog('TikTok Review Demo Portal initialized.');
-  }, []);
+  }, [searchParams]);
 
   const handleConnectTikTok = () => {
     addLog('Initiating official TikTok Developer Sandbox OAuth 2.0 PKCE flow (TIKTOK_SANDBOX_CLIENT_KEY)...');
@@ -123,6 +171,8 @@ export default function TikTokReviewDemoPage() {
       const data = await res.json();
       if (data.success) {
         addLog('✓ TikTok account disconnected and token revoked successfully.');
+        setAccount(null);
+        setCallbackSuccess(false);
         await fetchTikTokAccount();
         setUploadState('IDLE');
         setUploadResult(null);
@@ -175,7 +225,7 @@ export default function TikTokReviewDemoPage() {
         setUploadResult(data.result);
         addLog(`3/3 ✓ TikTok Content Posting API responded HTTP 200 OK!`);
         addLog(`Publish ID: ${data.result.platformPostId}`);
-        addLog(`Status: ${data.result.status} | Video successfully staged for creator review.`);
+        addLog(`Status: ${data.result.status} | Video successfully staged in Creator Inbox Draft.`);
       } else {
         setUploadState('ERROR');
         setUploadResult(data);
@@ -188,10 +238,53 @@ export default function TikTokReviewDemoPage() {
     }
   };
 
-  const isConnected = account && account.status === 'REAL_CONNECTED';
+  const isConnected = Boolean(account && (account.status === 'REAL_CONNECTED' || account.status === 'CONNECTED'));
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 py-4 sm:py-8 text-slate-300">
+      
+      {/* Dynamic Success Banner */}
+      {callbackSuccess && (
+        <div className="bg-emerald-950/80 border border-emerald-500/80 rounded-2xl p-4 sm:p-5 shadow-2xl flex items-start justify-between gap-4 animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-white">Official TikTok Sandbox OAuth 2.0 PKCE Connected!</h4>
+              <p className="text-xs text-emerald-300 mt-0.5">
+                Your TikTok Sandbox Target User has been authenticated, verified via <code className="font-mono text-white">user.info.basic</code>, and encrypted with AES-256-GCM.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setCallbackSuccess(false)}
+            className="text-xs text-emerald-400 hover:text-emerald-200 font-semibold shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {/* Dynamic Error Banner */}
+      {callbackError && (
+        <div className="bg-rose-950/80 border border-rose-500/80 rounded-2xl p-4 sm:p-5 shadow-2xl flex items-start justify-between gap-4 animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+            <div>
+              <h4 className="text-sm font-bold text-white">TikTok Sandbox OAuth Notice [{callbackError.code}]</h4>
+              <p className="text-xs text-rose-300 mt-0.5 font-mono">
+                {callbackError.message}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setCallbackError(null)}
+            className="text-xs text-rose-400 hover:text-rose-200 font-semibold shrink-0"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* Top Review Hub Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
         <div className="absolute -right-10 -top-10 w-72 h-72 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
@@ -263,7 +356,7 @@ export default function TikTokReviewDemoPage() {
               <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               {isConnected ? 'AUTHENTICATED' : 'WAITING OAUTH'}
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">{isConnected ? account?.username : 'Not Connected'}</div>
+            <div className="text-[10px] text-slate-400 mt-0.5 truncate">{isConnected ? account?.username : 'Not Connected'}</div>
           </div>
         </div>
       </div>
@@ -297,7 +390,7 @@ export default function TikTokReviewDemoPage() {
                 <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
                 <span>Checking TikTok connection status...</span>
               </div>
-            ) : isConnected ? (
+            ) : isConnected && account ? (
               <div className="p-4 bg-emerald-950/40 border border-emerald-800/60 rounded-xl space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -314,20 +407,29 @@ export default function TikTokReviewDemoPage() {
                       <div className="text-xs text-emerald-300 font-mono">{account.username}</div>
                     </div>
                   </div>
-                  <button
-                    onClick={handleDisconnect}
-                    disabled={isDisconnecting}
-                    className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-300 text-xs font-semibold transition-colors flex items-center gap-1.5"
-                  >
-                    {isDisconnecting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
-                    <span>Disconnect</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={fetchTikTokAccount}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition-colors"
+                      title="Refresh status"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={handleDisconnect}
+                      disabled={isDisconnecting}
+                      className="px-3 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-800 text-red-300 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                    >
+                      {isDisconnecting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
+                      <span>Disconnect</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-emerald-800/40 text-[11px]">
                   <div>
-                    <span className="text-slate-400 block">Followers:</span>
-                    <span className="font-bold text-white">{account.followerCount > 0 ? account.followerCount.toLocaleString() : 'N/A (Basic Scope)'}</span>
+                    <span className="text-slate-400 block">Identity Scope:</span>
+                    <span className="font-bold text-emerald-400 font-mono">user.info.basic ✓</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Token Security:</span>
@@ -343,7 +445,7 @@ export default function TikTokReviewDemoPage() {
               <div className="p-5 bg-slate-950 rounded-xl border border-slate-800 space-y-4 text-center">
                 <div className="flex items-center justify-center gap-2 text-amber-400 text-xs font-medium">
                   <AlertTriangle className="w-4 h-4" />
-                  <span>No TikTok account currently connected in Live Mode.</span>
+                  <span>No TikTok Sandbox account currently connected.</span>
                 </div>
                 <button
                   onClick={handleConnectTikTok}
@@ -628,5 +730,18 @@ export default function TikTokReviewDemoPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function TikTokReviewDemoPage() {
+  return (
+    <Suspense fallback={
+      <div className="max-w-5xl mx-auto py-12 text-center text-slate-400 flex items-center justify-center gap-2">
+        <RefreshCw className="w-5 h-5 animate-spin text-rose-500" />
+        <span>Loading TikTok Review Demo Hub...</span>
+      </div>
+    }>
+      <TikTokReviewDemoContent />
+    </Suspense>
   );
 }

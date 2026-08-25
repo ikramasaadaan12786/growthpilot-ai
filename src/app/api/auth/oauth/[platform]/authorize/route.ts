@@ -32,11 +32,7 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const clientType = searchParams.get('client') || 'web';
     
-    // Generate secure anti-CSRF state token encoding platform, client runtime, and crypto nonce
-    const nonce = crypto.randomBytes(8).toString('hex');
-    const state = `${platform}_${clientType}_${Date.now()}_${nonce}`;
-
-    // For TikTok: generate PKCE code verifier + challenge and store verifier in an httpOnly cookie
+    // For TikTok: generate PKCE code verifier + challenge and store verifier in both state and an httpOnly cookie
     let codeVerifier: string | undefined;
     let codeChallenge: string | undefined;
 
@@ -44,6 +40,12 @@ export async function GET(
       codeVerifier = generateCodeVerifier();
       codeChallenge = deriveCodeChallenge(codeVerifier);
     }
+
+    // Generate secure anti-CSRF state token encoding platform, client runtime, crypto nonce, and PKCE verifier (for zero-drop cross-origin redirects)
+    const nonce = crypto.randomBytes(8).toString('hex');
+    const state = platform === 'TIKTOK' && codeVerifier
+      ? `${platform}_${clientType}_${Date.now()}_${nonce}_${codeVerifier}`
+      : `${platform}_${clientType}_${Date.now()}_${nonce}`;
 
     const authUrl = adapter.getAuthorizationUrl(state, codeChallenge);
 

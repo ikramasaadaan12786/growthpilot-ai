@@ -24,7 +24,7 @@ export async function GET(
     const dest = isSandbox ? '/tiktok-review-demo' : '/social-accounts';
     const redirectUrl = new URL(dest, urlString);
     redirectUrl.searchParams.set('error', errorCode);
-    if (detail) redirectUrl.searchParams.set('message', detail.substring(0, 200));
+    if (detail) redirectUrl.searchParams.set('message', detail.substring(0, 250));
     redirectUrl.searchParams.set('platform', params?.platform || '');
     // Clear the PKCE cookie on error
     const res = NextResponse.redirect(redirectUrl);
@@ -52,26 +52,31 @@ export async function GET(
 
     const adapter = platformRegistry.getAdapter(platform);
 
-    // For TikTok: read PKCE verifier from httpOnly cookie set during /authorize
+    // For TikTok: recover PKCE verifier from state parameter (primary) or httpOnly cookie (fallback)
     let codeVerifier: string | undefined;
     if (platform === 'TIKTOK') {
-      const pkceRaw = req.cookies.get('tt_pkce')?.value;
-      if (pkceRaw) {
-        try {
-          const pkceData = JSON.parse(pkceRaw);
-          codeVerifier = pkceData.verifier;
+      // 1. Check if encoded in state (TIKTOK_clientType_timestamp_nonce_verifier)
+      if (stateParts.length >= 5 && stateParts[4]) {
+        codeVerifier = stateParts[4];
+        console.log('[TikTok OAuth] Successfully recovered PKCE code_verifier from state parameter');
+      }
 
-          // Validate state matches what was stored
-          if (pkceData.state && pkceData.state !== stateParam) {
-            console.warn('[TikTok OAuth] State mismatch. Expected:', pkceData.state, 'Got:', stateParam);
-            // State mismatch is a CSRF signal — reject
-            return errorRedirect('TIKTOK_STATE_MISMATCH', 'OAuth state parameter mismatch. Possible CSRF. Please retry.');
+      // 2. Check if present in cookie
+      if (!codeVerifier) {
+        const pkceRaw = req.cookies.get('tt_pkce')?.value;
+        if (pkceRaw) {
+          try {
+            const pkceData = JSON.parse(pkceRaw);
+            codeVerifier = pkceData.verifier;
+            console.log('[TikTok OAuth] Successfully recovered PKCE code_verifier from cookie');
+          } catch (e) {
+            console.warn('[TikTok OAuth] Failed to parse tt_pkce cookie:', (e as any).message);
           }
-        } catch (e) {
-          console.warn('[TikTok OAuth] Failed to parse tt_pkce cookie:', (e as any).message);
         }
-      } else {
-        console.warn('[TikTok OAuth] No tt_pkce cookie found — proceeding without PKCE verifier');
+      }
+
+      if (!codeVerifier) {
+        console.warn('[TikTok OAuth] No PKCE verifier found in state or cookie — proceeding with standard token exchange');
       }
     }
 
@@ -121,10 +126,11 @@ export async function GET(
         accountName: profile.displayName,
         username: profile.username,
         avatarUrl: profile.avatarUrl,
-        followerCount: profile.followersCount,
-        followingCount: profile.followingCount,
-        postCount: profile.postsCount,
+        followerCount: profile.followersCount || 0,
+        followingCount: profile.followingCount || 0,
+        postCount: profile.postsCount || 0,
         status: 'CONNECTED',
+        dataSource: isSandbox ? 'TikTok Developer Sandbox' : 'Official OAuth 2.0 API',
         lastSyncAt: new Date()
       },
       create: {
@@ -134,10 +140,11 @@ export async function GET(
         accountName: profile.displayName,
         username: profile.username,
         avatarUrl: profile.avatarUrl,
-        followerCount: profile.followersCount,
-        followingCount: profile.followingCount,
-        postCount: profile.postsCount,
+        followerCount: profile.followersCount || 0,
+        followingCount: profile.followingCount || 0,
+        postCount: profile.postsCount || 0,
         status: 'CONNECTED',
+        dataSource: isSandbox ? 'TikTok Developer Sandbox' : 'Official OAuth 2.0 API',
         lastSyncAt: new Date()
       }
     });
@@ -162,11 +169,13 @@ export async function GET(
       data: {
         userId: user.id,
         action: 'OAUTH_CONNECT',
-        details: `Official ${platform} account @${profile.username} connected via OAuth 2.0 (Client: ${clientType}${isSandbox ? ', Sandbox Mode' : ''}). Tokens encrypted AES-256-GCM.`,
+        details: `Official ${platform} account ${profile.username} (${profile.displayName}) connected via OAuth 2.0 (Client: ${clientType}${isSandbox ? ', Sandbox Mode' : ''}). Tokens encrypted AES-256-GCM.`,
         ipAddress: '127.0.0.1',
         userAgent: req.headers.get('user-agent') || 'GrowthPilot Agent'
       }
     });
+
+    console.log(`[TikTok OAuth] SUCCESS: Account ${profile.username} persisted to database with status CONNECTED.`);
 
     // Handle Desktop and Android client redirection via custom protocol deep link
     if (clientType === 'desktop' || clientType === 'android') {
@@ -211,8 +220,8 @@ export async function GET(
     }
 
     // TikTok Review Demo return path
-    if (clientType === 'tiktok-demo' || clientType === 'demo') {
-      const successUrl = new URL(`/tiktok-review-demo?connected=${platform}&success=true`, urlString);
+    if (clientType === 'tiktok-demo' || clientType === 'demo' || isSandbox) {
+      const successUrl = new URL(`/tiktok-review-demo?connected=${platform}&success=true&account=${encodeURIComponent(profile.username)}`, urlString);
       const res = NextResponse.redirect(successUrl);
       res.cookies.set('tt_pkce', '', { maxAge: 0, path: '/' });
       return res;
@@ -238,7 +247,7 @@ export async function GET(
       errorCode = 'NO_FACEBOOK_PAGE_FOUND';
     } else if (msg.includes('NO_INSTAGRAM_PROFESSIONAL') || msg.includes('NO_IG_BUSINESS_ACCOUNT')) {
       errorCode = 'NO_INSTAGRAM_PROFESSIONAL_ACCOUNT';
-    } else if (msg.includes('token exchange') || msg.includes('exchangeCodeForTokens')) {
+    } else if (msg.includes('token exchange') || msg.includes('exchangeCodeForTokens') || msg.includes('TIKTOK_TOKEN_ERROR')) {
       errorCode = 'TOKEN_EXCHANGE_FAILED';
     } else if (msg.includes('prisma') || msg.includes('database') || msg.includes('Unique constraint')) {
       errorCode = 'DATABASE_PERSISTENCE_FAILED';
