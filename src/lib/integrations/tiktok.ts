@@ -132,7 +132,7 @@ export class TikTokIntegration extends BaseSocialIntegration {
       redirect_uri: redirectUri
     };
 
-    // Only include code_verifier if it was provided (PKCE)
+    // Only include code_verifier if it was explicitly provided (e.g. mobile/desktop clients)
     if (codeVerifier) {
       params.code_verifier = codeVerifier;
     }
@@ -160,41 +160,49 @@ export class TikTokIntegration extends BaseSocialIntegration {
       throw new Error(`TIKTOK_INVALID_RESPONSE: Token endpoint returned non-JSON (HTTP ${res.status}): ${rawBody.substring(0, 300)}`);
     }
 
-    // TikTok success: { data: { access_token, ... }, error: { code: "ok" } }
-    // TikTok error:   { data: {}, error: { code: "...", message: "...", log_id: "..." } }
-    const errorCode = data?.error?.code;
-    const isSuccess = res.ok && (errorCode === 'ok' || errorCode === 0 || errorCode === undefined);
+    // Official TikTok OAuth v2 Response Specification:
+    // Success response is TOP LEVEL:
+    // { "access_token": "...", "expires_in": 86400, "open_id": "...", "refresh_token": "...", "scope": "...", "token_type": "Bearer" }
+    // Error response:
+    // { "error": "invalid_grant", "error_description": "...", "log_id": "..." } or { "error": { "code": "...", "message": "..." } }
+    
+    const accessToken = data.access_token || data.data?.access_token;
+    const refreshToken = data.refresh_token || data.data?.refresh_token;
+    const expiresIn = data.expires_in || data.data?.expires_in || 86400;
+    const tokenType = data.token_type || data.data?.token_type || 'Bearer';
+    const scope = data.scope || data.data?.scope || this.requiredScopes.join(',');
+    const openId = data.open_id || data.data?.open_id;
 
-    if (!isSuccess) {
-      // Surface safe diagnostic fields — never log code, client_secret, or access_token
-      const tiktokError = data?.error || {};
+    // Detect OAuth error payloads
+    const errorString = typeof data?.error === 'string' ? data.error : null;
+    const errorDesc = data?.error_description || (typeof data?.error === 'object' ? (data?.error?.message || data?.error?.description) : null) || data?.message;
+    const errorCode = typeof data?.error === 'object' ? data?.error?.code : (errorString || null);
+    const logId = data?.log_id || (typeof data?.error === 'object' ? data?.error?.log_id : null);
+
+    const hasExplicitError = Boolean(errorString || (errorCode && errorCode !== 'ok' && errorCode !== 0));
+
+    if (!res.ok || hasExplicitError || !accessToken) {
       const diagMsg = [
         `HTTP ${res.status}`,
-        tiktokError.code ? `code=${tiktokError.code}` : '',
-        tiktokError.message ? `message="${tiktokError.message}"` : '',
-        tiktokError.log_id ? `log_id=${tiktokError.log_id}` : ''
+        errorCode ? `error="${errorCode}"` : '',
+        errorDesc ? `description="${errorDesc}"` : '',
+        logId ? `log_id="${logId}"` : ''
       ].filter(Boolean).join(' | ');
 
       console.error(`[TikTok Token Exchange FAILED] ${diagMsg}`);
       throw new Error(`TIKTOK_TOKEN_ERROR [${diagMsg}]`);
     }
 
-    const tokenData = data.data || {};
-    if (!tokenData.access_token) {
-      throw new Error(`TIKTOK_TOKEN_ERROR: Token exchange succeeded but no access_token in response`);
-    }
-
-    console.log(`[TikTok Token Exchange] SUCCESS mode=${isSandbox ? 'SANDBOX' : 'PRODUCTION'} scope="${tokenData.scope || 'unknown'}"`);
+    console.log(`[TikTok Token Exchange] SUCCESS mode=${isSandbox ? 'SANDBOX' : 'PRODUCTION'} scope="${scope}" open_id_prefix=${openId ? openId.substring(0, 6) + '...' : 'present'}`);
 
     return {
-      accessToken: tokenData.access_token,
-      refreshToken: tokenData.refresh_token,
-      expiresIn: tokenData.expires_in || 86400,
-      tokenType: tokenData.token_type || 'Bearer',
-      scope: tokenData.scope || this.requiredScopes.join(',')
+      accessToken,
+      refreshToken,
+      expiresIn,
+      tokenType,
+      scope
     };
   }
-
 
   /**
    * Refreshes TikTok access token using refresh_token
@@ -226,16 +234,21 @@ export class TikTokIntegration extends BaseSocialIntegration {
       });
 
       const data = await res.json();
-      if (!res.ok || data.error?.code !== 'ok') {
-        throw new Error(data.error?.message || 'TikTok token refresh failed');
+      
+      const accessToken = data.access_token || data.data?.access_token;
+      const newRefreshToken = data.refresh_token || data.data?.refresh_token || refreshToken;
+      const expiresIn = data.expires_in || data.data?.expires_in || 86400;
+      const tokenType = data.token_type || data.data?.token_type || 'Bearer';
+
+      if (!res.ok || !accessToken || (data.error && data.error !== 'ok' && data.error.code !== 'ok')) {
+        throw new Error(data.error_description || data.error?.message || data.error || 'TikTok token refresh failed');
       }
 
-      const tokenData = data.data || {};
       return {
-        accessToken: tokenData.access_token,
-        refreshToken: tokenData.refresh_token || refreshToken,
-        expiresIn: tokenData.expires_in || 86400,
-        tokenType: tokenData.token_type || 'Bearer'
+        accessToken,
+        refreshToken: newRefreshToken,
+        expiresIn,
+        tokenType
       };
     } catch (err: any) {
       throw new Error(`TikTok token refresh failed: ${err.message}`);

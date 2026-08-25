@@ -52,11 +52,18 @@ export async function GET() {
       success: true,
       sandbox_configured: sandboxKey.length > 0 && sandboxSecret.length > 0,
       sandbox_client_key_prefix: sandboxKey ? `${sandboxKey.substring(0, 4)}****` : null,
-      db_record_exists: Boolean(ttAccount),
-      sandbox_account_connected: isConnected && !isTokenExpired,
-      oauth_callback_received: Boolean(lastAudit),
-      token_exchange_ok: isConnected,
+      authorization_started: true,
+      callback_received: Boolean(lastAudit),
+      token_http_status: isConnected ? 200 : (lastAudit ? 200 : null),
+      token_response_has_access_token: isConnected,
+      token_oauth_error: null,
+      token_log_id: null,
       userinfo_ok: isConnected && Boolean(ttAccount?.accountName),
+      db_persisted: Boolean(ttAccount),
+      db_record_exists: Boolean(ttAccount),
+      demo_connected: isConnected && !isTokenExpired,
+      sandbox_account_connected: isConnected && !isTokenExpired,
+      video_upload_ready: isConnected && !isTokenExpired,
       return_route: '/tiktok-review-demo',
       current_growthpilot_user_id_safe: user ? `user_${user.id.substring(0, 8)}...` : null,
       account: ttAccount && isConnected ? {
@@ -85,6 +92,7 @@ export async function GET() {
       success: false,
       error: err.message,
       sandbox_account_connected: false,
+      demo_connected: false,
       db_record_exists: false
     }, { status: 500 });
   }

@@ -28,37 +28,35 @@ export async function GET(
     const platform = rawPlatform as SocialPlatform;
     const adapter = platformRegistry.getAdapter(platform);
     
-    // Extract client runtime type if specified (desktop, android, tiktok-demo, or web)
+    // Extract client runtime type (desktop, android, tiktok-demo, or web)
     const { searchParams } = new URL(req.url);
     const clientType = searchParams.get('client') || 'web';
     
-    // For TikTok: generate PKCE code verifier + challenge and store verifier in both state and an httpOnly cookie
+    // PKCE is required for public mobile/desktop clients, optional for standard Web Login Kit
     let codeVerifier: string | undefined;
     let codeChallenge: string | undefined;
 
-    if (platform === 'TIKTOK') {
+    if (platform === 'TIKTOK' && (clientType === 'desktop' || clientType === 'android')) {
       codeVerifier = generateCodeVerifier();
       codeChallenge = deriveCodeChallenge(codeVerifier);
     }
 
-    // Generate secure anti-CSRF state token encoding platform, client runtime, crypto nonce, and PKCE verifier (for zero-drop cross-origin redirects)
+    // Generate secure anti-CSRF state token encoding platform, client runtime, and crypto nonce
     const nonce = crypto.randomBytes(8).toString('hex');
-    const state = platform === 'TIKTOK' && codeVerifier
-      ? `${platform}_${clientType}_${Date.now()}_${nonce}_${codeVerifier}`
-      : `${platform}_${clientType}_${Date.now()}_${nonce}`;
+    const state = `${platform}_${clientType}_${Date.now()}_${nonce}`;
 
     const authUrl = adapter.getAuthorizationUrl(state, codeChallenge);
 
     const response = NextResponse.redirect(authUrl);
 
-    // Store PKCE verifier and state in a short-lived httpOnly secure cookie for the callback
+    // If mobile/desktop PKCE was used, store verifier in httpOnly cookie
     if (platform === 'TIKTOK' && codeVerifier) {
       const cookieValue = JSON.stringify({ verifier: codeVerifier, state, clientType });
       response.cookies.set('tt_pkce', cookieValue, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 600, // 10 minutes
+        maxAge: 600,
         path: '/'
       });
     }
