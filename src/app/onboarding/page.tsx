@@ -12,14 +12,14 @@ import {
   Zap, 
   Crown, 
   Check, 
-  Radio,
-  Lock
+  Lock,
+  Flame,
+  Building
 } from 'lucide-react';
-import { PlatformIcon } from '@/components/common/PlatformIcon';
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<'PRO' | 'BASIC' | 'AGENCY'>('PRO');
+  const [selectedPlan, setSelectedPlan] = useState<'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS'>('PRO');
   const [isUpgrading, setIsUpgrading] = useState(false);
 
   const handleContinue = async () => {
@@ -49,123 +49,164 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-10">
+      <div className="max-w-6xl mx-auto space-y-10">
         
         {/* Onboarding Header */}
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>Step 2 of 2: Activate Growth Engine</span>
+            <span>Step 2 of 2: 7-Day Free Trial on All Plans</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
-            Select your GrowthPilot Plan
+            Choose Your GrowthPilot AI Plan
           </h1>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto">
-            Your private workspace is created. Choose your growth tier or proceed with the included 14-day Pro trial.
+          <p className="text-sm text-slate-400 max-w-2xl mx-auto">
+            All plans include a full 7-day free trial. After the trial, maintain an active monthly subscription to keep AI growth automation active.
           </p>
         </div>
 
-        {/* Plan Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 4 Plan Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
           
-          {/* Basic Tier */}
+          {/* Starter Plan */}
           <div 
-            onClick={() => setSelectedPlan('BASIC')}
-            className={`cursor-pointer rounded-3xl p-6 border transition-all relative space-y-4 ${
-              selectedPlan === 'BASIC'
+            onClick={() => setSelectedPlan('STARTER')}
+            className={`cursor-pointer rounded-3xl p-5 border transition-all relative space-y-4 ${
+              selectedPlan === 'STARTER'
                 ? 'bg-slate-900 border-indigo-500 ring-2 ring-indigo-500/50 shadow-2xl shadow-indigo-500/10'
                 : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
             }`}
           >
             <div>
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Growth Basic</div>
-              <div className="text-2xl font-black text-white mt-1">$29<span className="text-xs font-normal text-slate-400">/mo</span></div>
-              <p className="text-[11px] text-slate-400 mt-1">For solo realtors &amp; creators starting multi-channel growth.</p>
+              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Starter</div>
+              <div className="text-2xl font-black text-white mt-1">$19<span className="text-xs font-normal text-slate-400">/mo</span></div>
+              <p className="text-[11px] text-slate-400 mt-1">For solo realtors &amp; creators starting social growth.</p>
             </div>
 
             <ul className="space-y-2 text-xs text-slate-300 pt-3 border-t border-slate-800">
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> 3 Connected Channels
+                <Check className="w-3.5 h-3.5 text-indigo-400" /> 2 Connected Channels
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> 100 AI Posts / Month
+                <Check className="w-3.5 h-3.5 text-indigo-400" /> 50 AI Posts / Month
               </li>
               <li className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-indigo-400" /> Automated Calendar
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> Lead Ads CRM Pipeline
+                <Check className="w-3.5 h-3.5 text-indigo-400" /> 7-Day Free Trial
               </li>
             </ul>
           </div>
 
-          {/* Pro Tier (Popular / Trial Default) */}
+          {/* Pro Plan (Popular / Trial Default) */}
           <div 
             onClick={() => setSelectedPlan('PRO')}
-            className={`cursor-pointer rounded-3xl p-6 border transition-all relative space-y-4 ${
+            className={`cursor-pointer rounded-3xl p-5 border transition-all relative space-y-4 ${
               selectedPlan === 'PRO'
                 ? 'bg-slate-900 border-emerald-500 ring-2 ring-emerald-500/50 shadow-2xl shadow-emerald-500/20'
                 : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
             }`}
           >
             <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase tracking-wider">
-              14-Day Free Trial Included
+              Most Popular
             </div>
 
             <div>
               <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
                 <Crown className="w-3.5 h-3.5" /> Growth Pro
               </div>
-              <div className="text-2xl font-black text-white mt-1">$79<span className="text-xs font-normal text-slate-400">/mo</span></div>
-              <p className="text-[11px] text-slate-400 mt-1">Full-stack multi-platform video &amp; real estate automation.</p>
+              <div className="text-2xl font-black text-white mt-1">$49<span className="text-xs font-normal text-slate-400">/mo</span></div>
+              <p className="text-[11px] text-slate-400 mt-1">Multi-platform video, Creator Inbox &amp; Real Estate AI.</p>
             </div>
 
             <ul className="space-y-2 text-xs text-slate-300 pt-3 border-t border-slate-800">
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> 10 Connected Channels
+                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> 5 Connected Channels
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Unlimited AI Generations
+                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> 250 AI Posts / Month
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Real Estate Multi-Platform Engine
+                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Real Estate Multi-Platform
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Creator Inbox Direct Publishing
+                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Creator Inbox Direct Post
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Full Analytics &amp; Growth Score
+                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> 7-Day Free Trial
               </li>
             </ul>
           </div>
 
-          {/* Agency Tier */}
+          {/* Advanced Plan */}
           <div 
-            onClick={() => setSelectedPlan('AGENCY')}
-            className={`cursor-pointer rounded-3xl p-6 border transition-all relative space-y-4 ${
-              selectedPlan === 'AGENCY'
+            onClick={() => setSelectedPlan('ADVANCED')}
+            className={`cursor-pointer rounded-3xl p-5 border transition-all relative space-y-4 ${
+              selectedPlan === 'ADVANCED'
                 ? 'bg-slate-900 border-indigo-500 ring-2 ring-indigo-500/50 shadow-2xl shadow-indigo-500/10'
                 : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
             }`}
           >
             <div>
-              <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Agency Scale</div>
-              <div className="text-2xl font-black text-white mt-1">$199<span className="text-xs font-normal text-slate-400">/mo</span></div>
-              <p className="text-[11px] text-slate-400 mt-1">For brokerage firms &amp; high-volume social media marketing agencies.</p>
+              <div className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Flame className="w-3.5 h-3.5" /> Advanced
+              </div>
+              <div className="text-2xl font-black text-white mt-1">$99<span className="text-xs font-normal text-slate-400">/mo</span></div>
+              <p className="text-[11px] text-slate-400 mt-1">High-volume growth, unlimited AI &amp; Full Lead CRM.</p>
             </div>
 
             <ul className="space-y-2 text-xs text-slate-300 pt-3 border-t border-slate-800">
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> Unlimited Channels &amp; Profiles
+                <Check className="w-3.5 h-3.5 text-cyan-400" /> 15 Connected Channels
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> Team Collaboration &amp; Roles
+                <Check className="w-3.5 h-3.5 text-cyan-400" /> Unlimited AI Generations
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> White-Label Executive Reports
+                <Check className="w-3.5 h-3.5 text-cyan-400" /> Full Lead CRM Pipeline
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> Emergency Kill-Switch &amp; Logs
+                <Check className="w-3.5 h-3.5 text-cyan-400" /> Weekly AI Performance Reports
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-cyan-400" /> 7-Day Free Trial
+              </li>
+            </ul>
+          </div>
+
+          {/* Business Plan */}
+          <div 
+            onClick={() => setSelectedPlan('BUSINESS')}
+            className={`cursor-pointer rounded-3xl p-5 border transition-all relative space-y-4 ${
+              selectedPlan === 'BUSINESS'
+                ? 'bg-slate-900 border-indigo-500 ring-2 ring-indigo-500/50 shadow-2xl shadow-indigo-500/10'
+                : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
+            }`}
+          >
+            <div>
+              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5" /> Business
+              </div>
+              <div className="text-2xl font-black text-white mt-1">$199<span className="text-xs font-normal text-slate-400">/mo</span></div>
+              <p className="text-[11px] text-slate-400 mt-1">For brokerages, marketing teams &amp; enterprise agencies.</p>
+            </div>
+
+            <ul className="space-y-2 text-xs text-slate-300 pt-3 border-t border-slate-800">
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-amber-400" /> Unlimited Channels
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-amber-400" /> Team Collaboration
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-amber-400" /> White-Label PDF Reports
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-amber-400" /> Dedicated Webhook Support
+              </li>
+              <li className="flex items-center gap-2">
+                <Check className="w-3.5 h-3.5 text-amber-400" /> 7-Day Free Trial
               </li>
             </ul>
           </div>
@@ -175,11 +216,11 @@ export default function OnboardingPage() {
         {/* Action Button & Disclaimer */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
-            <h3 className="text-base font-bold text-white">Ready to connect your social media channels?</h3>
+            <h3 className="text-base font-bold text-white">Ready to activate your 7-day free trial?</h3>
             <p className="text-xs text-slate-400">
               {selectedPlan === 'PRO' 
-                ? 'Your 14-day free trial will activate automatically. No charge today.' 
-                : `Proceed with ${selectedPlan} Tier activation.`}
+                ? 'Your 7-day free trial will activate automatically. No charge today.' 
+                : `Proceed with ${selectedPlan} Tier trial activation.`}
             </p>
           </div>
 
@@ -188,7 +229,7 @@ export default function OnboardingPage() {
             disabled={isUpgrading}
             className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 shrink-0 group"
           >
-            <span>{selectedPlan === 'PRO' ? 'Start Free Trial & Connect Accounts' : 'Proceed to Checkout'}</span>
+            <span>{selectedPlan === 'PRO' ? 'Start 7-Day Free Trial & Connect Accounts' : 'Proceed to Checkout'}</span>
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>

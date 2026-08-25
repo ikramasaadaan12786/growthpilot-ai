@@ -256,18 +256,18 @@ export function AdminDashboard() {
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-1.5">
                         <select
-                          value={u.subscription?.plan || 'FREE'}
+                          value={u.subscription?.plan || 'TRIAL'}
                           onChange={(e) => handleChangePlan(u.id, e.target.value)}
                           disabled={actionLoadingId === u.id}
                           aria-label={`Change subscription tier for ${u.name}`}
                           className="bg-slate-950 border border-slate-800 text-xs text-emerald-400 font-bold rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500 font-mono"
                         >
-                          <option value="FREE">FREE</option>
-                          <option value="TRIAL">TRIAL</option>
-                          <option value="BASIC">BASIC</option>
-                          <option value="PRO">PRO</option>
-                          <option value="AGENCY">AGENCY</option>
-                          <option value="BUSINESS">BUSINESS</option>
+                          <option value="TRIAL">TRIAL (7-Day)</option>
+                          <option value="STARTER">STARTER ($19)</option>
+                          <option value="PRO">PRO ($49)</option>
+                          <option value="ADVANCED">ADVANCED ($99)</option>
+                          <option value="BUSINESS">BUSINESS ($199)</option>
+                          <option value="FREE">INACTIVE / EXPIRED</option>
                         </select>
                         <span className="text-[10px] text-slate-500 uppercase">{u.subscription?.status || 'ACTIVE'}</span>
                       </div>

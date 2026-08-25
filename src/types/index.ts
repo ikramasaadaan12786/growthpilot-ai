@@ -37,7 +37,7 @@ export type LeadStatus = 'NEW' | 'CONTACTED' | 'QUALIFIED' | 'MEETING' | 'NEGOTI
 
 export type CampaignObjective = 'AWARENESS' | 'REACH' | 'ENGAGEMENT' | 'TRAFFIC' | 'LEADS' | 'CONVERSIONS';
 
-export type SubscriptionTier = 'FREE' | 'PRO' | 'AGENCY';
+export type SubscriptionTier = 'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS' | 'TRIAL' | 'FREE' | 'BASIC' | 'AGENCY';
 
 export interface SocialAccountData {
   id: string;

@@ -54,6 +54,9 @@ model Subscription {
   stripeCustomerId     String?
   stripeSubscriptionId String?
   stripePriceId        String?
+  paddleCustomerId     String?
+  paddleSubscriptionId String?
+  paddlePriceId        String?
   currentPeriodStart   DateTime  @default(now())
   currentPeriodEnd     DateTime
   cancelAtPeriodEnd    Boolean   @default(false)

@@ -238,93 +238,145 @@ export default function SettingsPage() {
           <CreditCard className="w-5 h-5 text-indigo-400" />
           <span>Subscription Plans & Client Accounts</span>
         </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Free Plan */}
-          <div className={`bg-slate-900 border rounded-2xl p-6 shadow-card flex flex-col justify-between transition-all ${
-            subscriptionPlan === 'FREE' ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-800'
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Starter Plan */}
+          <div className={`bg-slate-900 border rounded-2xl p-5 shadow-card flex flex-col justify-between transition-all ${
+            subscriptionPlan === 'STARTER' ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-slate-800'
           }`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold uppercase text-slate-400">FREE / LOCAL</span>
-                {subscriptionPlan === 'FREE' && (
-                  <span className="text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">Active</span>
-                )}
+                <span className="text-xs font-extrabold uppercase text-slate-400">STARTER</span>
+                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">7-Day Trial</span>
               </div>
-              <div className="text-3xl font-black text-white font-mono mb-4">$0 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
+              <div className="text-2xl font-black text-white font-mono mb-3">$19 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
               
-              <ul className="space-y-2 text-xs text-slate-300 mb-6">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> 100% Free Local Desktop App</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Local Heuristic AI Studio</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Content Calendar & Approval Flow</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Offline Mode Capable</li>
+              <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> 2 Connected Channels</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> 50 AI Posts / Month</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> Content Calendar</li>
               </ul>
             </div>
 
             <button
-              onClick={() => handleSelectPlan('FREE')}
+              onClick={async () => {
+                const res = await fetch('/api/billing/checkout', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ plan: 'STARTER' })
+                });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+              }}
               className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
             >
-              {subscriptionPlan === 'FREE' ? 'Current Tier' : 'Switch to Free Tier'}
+              {subscriptionPlan === 'STARTER' ? 'Active Tier' : 'Upgrade ($19/mo)'}
             </button>
           </div>
 
           {/* Pro Plan */}
-          <div className={`bg-gradient-to-b from-indigo-950/40 via-slate-900 to-slate-900 border rounded-2xl p-6 shadow-glow-primary flex flex-col justify-between transition-all ${
-            subscriptionPlan === 'PRO' ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-indigo-500/40'
+          <div className={`bg-gradient-to-b from-indigo-950/40 via-slate-900 to-slate-900 border rounded-2xl p-5 shadow-glow-primary flex flex-col justify-between transition-all ${
+            subscriptionPlan === 'PRO' ? 'border-emerald-500 ring-2 ring-emerald-500/30' : 'border-emerald-500/40'
           }`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold uppercase text-indigo-400">PRO PLAN</span>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-bold border border-indigo-500/30">
-                  Most Popular
+                <span className="text-xs font-extrabold uppercase text-emerald-400">GROWTH PRO</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-bold border border-emerald-500/30">
+                  Popular
                 </span>
               </div>
-              <div className="text-3xl font-black text-white font-mono mb-4">$49 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
+              <div className="text-2xl font-black text-white font-mono mb-3">$49 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
               
-              <ul className="space-y-2 text-xs text-slate-200 mb-6">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> All 4 Social Platforms</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Advanced Multi-Channel Analytics</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Real Estate Growth Mode</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Content Calendar & Auto-Publishing</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Competitor Intelligence & SWOT</li>
+              <ul className="space-y-2 text-xs text-slate-200 mb-4">
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> 5 Connected Channels</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> 250 AI Posts / Month</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> Real Estate AI Engine</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-400" /> Creator Inbox Direct</li>
               </ul>
             </div>
 
             <button
-              onClick={() => handleSelectPlan('PRO')}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-indigo-600/30 transition-all"
+              onClick={async () => {
+                const res = await fetch('/api/billing/checkout', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ plan: 'PRO' })
+                });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+              }}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/30 transition-all"
             >
-              {subscriptionPlan === 'PRO' ? 'Active Tier' : 'Upgrade to Pro'}
+              {subscriptionPlan === 'PRO' ? 'Active Tier' : 'Upgrade ($49/mo)'}
             </button>
           </div>
 
-          {/* Agency Plan */}
-          <div className={`bg-slate-900 border rounded-2xl p-6 shadow-card flex flex-col justify-between transition-all ${
-            subscriptionPlan === 'AGENCY' ? 'border-cyan-500 ring-2 ring-cyan-500/30' : 'border-slate-800'
+          {/* Advanced Plan */}
+          <div className={`bg-slate-900 border rounded-2xl p-5 shadow-card flex flex-col justify-between transition-all ${
+            subscriptionPlan === 'ADVANCED' ? 'border-cyan-500 ring-2 ring-cyan-500/30' : 'border-slate-800'
           }`}>
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-extrabold uppercase text-cyan-400">AGENCY PLAN</span>
-                {subscriptionPlan === 'AGENCY' && (
-                  <span className="text-[10px] bg-cyan-600 text-white px-2 py-0.5 rounded-full font-bold">Active</span>
-                )}
+                <span className="text-xs font-extrabold uppercase text-cyan-400">ADVANCED</span>
+                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-bold">7-Day Trial</span>
               </div>
-              <div className="text-3xl font-black text-white font-mono mb-4">$199 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
+              <div className="text-2xl font-black text-white font-mono mb-3">$99 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
               
-              <ul className="space-y-2 text-xs text-slate-300 mb-6">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlimited Client Accounts</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Multi-Seat Team Access</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> White-Label PDF Reports</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Dedicated Ad Campaign Management</li>
+              <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-cyan-400" /> 15 Connected Channels</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-cyan-400" /> Unlimited AI Generations</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-cyan-400" /> Full Lead CRM Pipeline</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-cyan-400" /> Weekly AI Reports</li>
               </ul>
             </div>
 
             <button
-              onClick={() => handleSelectPlan('AGENCY')}
-              className="w-full py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:opacity-95 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+              onClick={async () => {
+                const res = await fetch('/api/billing/checkout', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ plan: 'ADVANCED' })
+                });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+              }}
+              className="w-full py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:opacity-95 text-white rounded-xl text-xs font-bold transition-all"
             >
-              {subscriptionPlan === 'AGENCY' ? 'Active Tier' : 'Upgrade to Agency'}
+              {subscriptionPlan === 'ADVANCED' ? 'Active Tier' : 'Upgrade ($99/mo)'}
+            </button>
+          </div>
+
+          {/* Business Plan */}
+          <div className={`bg-slate-900 border rounded-2xl p-5 shadow-card flex flex-col justify-between transition-all ${
+            subscriptionPlan === 'BUSINESS' ? 'border-amber-500 ring-2 ring-amber-500/30' : 'border-slate-800'
+          }`}>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-extrabold uppercase text-amber-400">BUSINESS</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">7-Day Trial</span>
+              </div>
+              <div className="text-2xl font-black text-white font-mono mb-3">$199 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
+              
+              <ul className="space-y-2 text-xs text-slate-300 mb-4">
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-400" /> Unlimited Channels</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-400" /> Team Collaboration</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-400" /> White-Label PDF Reports</li>
+                <li className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-amber-400" /> Dedicated Webhook</li>
+              </ul>
+            </div>
+
+            <button
+              onClick={async () => {
+                const res = await fetch('/api/billing/checkout', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ plan: 'BUSINESS' })
+                });
+                const data = await res.json();
+                if (data.url) window.location.href = data.url;
+              }}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all"
+            >
+              {subscriptionPlan === 'BUSINESS' ? 'Active Tier' : 'Upgrade ($199/mo)'}
             </button>
           </div>
         </div>

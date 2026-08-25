@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     // Hash password securely with PBKDF2
     const passwordHash = hashPassword(password);
-    const trialEnd = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14-day free trial
+    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day free trial
 
     // Create user and subscription in an isolated transaction
     const newUser = await prisma.user.create({
