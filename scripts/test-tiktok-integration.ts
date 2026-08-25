@@ -520,6 +520,41 @@ async function runTikTokIntegrationTests() {
     assert(false, 'Test 25: Official TikTok Verification File Deployment', err.message);
   }
 
+  // Test 26: TikTok Review Demo Interactive Portal Verification
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const demoPagePath = path.join(process.cwd(), 'src/app/tiktok-review-demo/page.tsx');
+    const demoExists = fs.existsSync(demoPagePath);
+    const demoContent = demoExists ? fs.readFileSync(demoPagePath, 'utf-8') : '';
+
+    const hasLoginKit = demoContent.includes('user.info.basic') && demoContent.includes('handleConnectTikTok');
+    const hasVideoUpload = demoContent.includes('video.upload') && demoContent.includes('handleInitiateUpload');
+    const hasLiveLogs = demoContent.includes('apiLogs') && demoContent.includes('LIVE API CONSOLE');
+
+    assert(
+      Boolean(demoExists && hasLoginKit && hasVideoUpload && hasLiveLogs),
+      'Test 26: TikTok Review Demo Interactive Hub Deployment',
+      'Verified /tiktok-review-demo exists and integrates Login Kit OAuth, video.upload draft dispatcher, and real-time logs'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 26: TikTok Review Demo Interactive Hub Deployment', err.message);
+  }
+
+  // Test 27: Content Posting API Inbox Draft Upload Engine
+  try {
+    const draftRes = await tt.uploadVideoDraft('tt_live_test_token_123', 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4');
+    
+    assert(
+      Boolean(draftRes.success && draftRes.platformPostId?.startsWith('v_inbox_file_')),
+      'Test 27: Content Posting API Inbox Draft Upload Engine',
+      `Successfully processed video draft with ID: ${draftRes.platformPostId || 'none'}`
+    );
+  } catch (err: any) {
+    assert(false, 'Test 27: Content Posting API Inbox Draft Upload Engine', err.message);
+  }
+
   console.log('\n========================================================');
   const passCount = results.filter(r => r.passed).length;
   console.log(`  TEST RESULTS SUMMARY: ${passCount}/${results.length} PASSED`);

@@ -138,7 +138,9 @@ export function Sidebar() {
           <span>•</span>
           <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
           <span>•</span>
-          <Link href="/tiktok-review" className="hover:text-rose-400 text-slate-400 transition-colors">TikTok Review</Link>
+          <Link href="/tiktok-review-demo" className="hover:text-rose-400 text-rose-400 font-semibold transition-colors">TikTok Demo</Link>
+          <span>•</span>
+          <Link href="/tiktok-review" className="hover:text-slate-300 text-slate-400 transition-colors">Review</Link>
         </div>
       </div>
     </aside>

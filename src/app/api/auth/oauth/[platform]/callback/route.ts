@@ -162,6 +162,11 @@ export async function GET(
       });
     }
 
+    // Support TikTok Review Demo return path
+    if (clientType === 'tiktok-demo' || clientType === 'demo') {
+      return NextResponse.redirect(new URL(`/tiktok-review-demo?connected=${platform}&success=true`, urlString));
+    }
+
     // Default Web redirect
     return NextResponse.redirect(new URL(`/social-accounts?connected=${platform}&success=true`, urlString));
   } catch (error: any) {

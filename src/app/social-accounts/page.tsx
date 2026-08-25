@@ -124,11 +124,19 @@ export default function SocialAccountsPage() {
           </Link>
 
           <Link
+            href="/tiktok-review-demo"
+            className="px-3.5 py-2 bg-gradient-to-r from-rose-950/80 to-slate-900 hover:from-rose-900 border border-rose-800 text-rose-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm"
+          >
+            <PlatformIcon platform="TIKTOK" size={14} />
+            <span>TikTok Review Demo</span>
+          </Link>
+
+          <Link
             href="/tiktok-review"
             className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
           >
             <PlatformIcon platform="TIKTOK" size={14} />
-            <span>TikTok Review</span>
+            <span>TikTok Review Guide</span>
           </Link>
 
           <button

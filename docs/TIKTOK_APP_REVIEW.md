@@ -14,7 +14,8 @@ Our application utilizes TikTok Login Kit to securely authenticate creators via 
 --- TESTING INSTRUCTIONS FOR TIKTOK REVIEW TEAM ---
 
 1. Access the live production web app:
-   URL: https://growthpilot-ai-two.vercel.app/social-accounts
+   URL: https://growthpilot-ai-two.vercel.app/tiktok-review-demo (Interactive Review Hub)
+   or: https://growthpilot-ai-two.vercel.app/social-accounts
 
 2. Connect TikTok Account:
    - On the "TikTok for Business & Creators" card, click the "Connect TikTok" button.
