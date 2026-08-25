@@ -460,7 +460,7 @@ async function runTikTokIntegrationTests() {
     const fs = await import('fs');
     const path = await import('path');
 
-    function scanFiles(dir: string): string[] {
+    const scanFiles = (dir: string): string[] => {
       let files: string[] = [];
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       for (const entry of entries) {
@@ -472,7 +472,7 @@ async function runTikTokIntegrationTests() {
         }
       }
       return files;
-    }
+    };
 
     const clientFiles = scanFiles(path.join(process.cwd(), 'src/components'));
     let secretLeakedInComponents = false;
