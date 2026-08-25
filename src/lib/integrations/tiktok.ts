@@ -494,19 +494,24 @@ export class TikTokIntegration extends BaseSocialIntegration {
 
       if (Buffer.isBuffer(videoBufferOrUrl)) {
         videoBuffer = videoBufferOrUrl;
-      } else if (typeof videoBufferOrUrl === 'string' && (videoBufferOrUrl.startsWith('http://') || videoBufferOrUrl.startsWith('https://'))) {
+      } else if (typeof videoBufferOrUrl === 'string') {
+        let fetchUrl = videoBufferOrUrl;
+        if (fetchUrl.startsWith('/')) {
+          const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://growthpilot-ai-two.vercel.app').replace(/\/$/, '');
+          fetchUrl = `${appUrl}${fetchUrl}`;
+        }
         try {
-          console.log(`[TikTok Inbox Video] Fetching remote video buffer from ${videoBufferOrUrl.substring(0, 50)}...`);
-          const fetchRes = await fetch(videoBufferOrUrl);
+          console.log(`[TikTok Inbox Video] Fetching video buffer from ${fetchUrl.substring(0, 60)}...`);
+          const fetchRes = await fetch(fetchUrl);
           if (fetchRes.ok) {
             videoBuffer = Buffer.from(await fetchRes.arrayBuffer());
           }
         } catch (fetchErr: any) {
-          console.warn('[TikTok Inbox Video] Failed to fetch remote video URL, falling back to bundled sample:', fetchErr.message);
+          console.warn('[TikTok Inbox Video] Remote fetch error:', fetchErr.message);
         }
       }
 
-      // Fallback to local high-quality sample video
+      // Fallback 1: Local filesystem
       if (!videoBuffer || videoBuffer.length < 1000) {
         const fs = await import('fs');
         const path = await import('path');
@@ -518,9 +523,22 @@ export class TikTokIntegration extends BaseSocialIntegration {
         for (const sp of samplePaths) {
           if (fs.existsSync(sp)) {
             videoBuffer = fs.readFileSync(sp);
-            console.log(`[TikTok Inbox Video] Loaded bundled sample video from ${sp} (${videoBuffer.length} bytes)`);
+            console.log(`[TikTok Inbox Video] Loaded sample video from ${sp} (${videoBuffer.length} bytes)`);
             break;
           }
+        }
+      }
+
+      // Fallback 2: Direct HTTP fetch from production static asset
+      if (!videoBuffer || videoBuffer.length < 1000) {
+        try {
+          const fallbackRes = await fetch('https://growthpilot-ai-two.vercel.app/sample-video.mp4');
+          if (fallbackRes.ok) {
+            videoBuffer = Buffer.from(await fallbackRes.arrayBuffer());
+            console.log(`[TikTok Inbox Video] Fetched fallback static asset (${videoBuffer.length} bytes)`);
+          }
+        } catch (e: any) {
+          console.warn('[TikTok Inbox Video] Fallback static fetch failed:', e.message);
         }
       }
 
