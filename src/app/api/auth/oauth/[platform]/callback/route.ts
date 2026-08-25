@@ -3,6 +3,7 @@ import { platformRegistry } from '@/lib/integrations/registry';
 import { SocialPlatform } from '@/types';
 import { encryptToken } from '@/lib/crypto';
 import { prisma } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/auth-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -102,22 +103,30 @@ export async function GET(
     const encryptedAccessToken = encryptToken(tokens.accessToken);
     const encryptedRefreshToken = tokens.refreshToken ? encryptToken(tokens.refreshToken) : null;
 
-    // Upsert default user & social account in database
-    const user = await prisma.user.upsert({
-      where: { email: 'team@growthpilot.ai' },
-      update: {},
-      create: {
-        email: 'team@growthpilot.ai',
-        name: 'GrowthPilot Growth Team',
-        role: 'USER',
-        companyName: 'GrowthPilot Capital & Real Estate'
-      }
-    });
+    // Determine target user (authenticated user if logged in, or fallback admin user for sandbox review demo)
+    const { user: authUser } = await getAuthenticatedUser(req);
+    let targetUserId: string;
+
+    if (authUser && authUser.id) {
+      targetUserId = authUser.id;
+    } else {
+      const adminUser = await prisma.user.upsert({
+        where: { email: 'team@growthpilot.ai' },
+        update: { role: 'ADMIN' },
+        create: {
+          email: 'team@growthpilot.ai',
+          name: 'GrowthPilot Growth Team',
+          role: 'ADMIN',
+          companyName: 'GrowthPilot Capital & Real Estate'
+        }
+      });
+      targetUserId = adminUser.id;
+    }
 
     const socialAccount = await prisma.socialAccount.upsert({
       where: {
         userId_platform_accountId: {
-          userId: user.id,
+          userId: targetUserId,
           platform,
           accountId: profile.id
         }
@@ -134,7 +143,7 @@ export async function GET(
         lastSyncAt: new Date()
       },
       create: {
-        userId: user.id,
+        userId: targetUserId,
         platform,
         accountId: profile.id,
         accountName: profile.displayName,
@@ -167,7 +176,7 @@ export async function GET(
     // Security Audit Log
     await prisma.auditLog.create({
       data: {
-        userId: user.id,
+        userId: targetUserId,
         action: 'OAUTH_CONNECT',
         details: `Official ${platform} account ${profile.username} (${profile.displayName}) connected via OAuth 2.0 (Client: ${clientType}${isSandbox ? ', Sandbox Mode' : ''}). Tokens encrypted AES-256-GCM.`,
         ipAddress: '127.0.0.1',

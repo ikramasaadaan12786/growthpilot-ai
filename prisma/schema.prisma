@@ -14,10 +14,16 @@ model User {
   id                String             @id @default(cuid())
   email             String             @unique
   name              String
+  passwordHash      String?
   avatar            String?
   role              String             @default("USER") // USER, AGENCY, ADMIN
   companyName       String?
   industry          String?            @default("Real Estate & Business")
+  emailVerified     Boolean            @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpires DateTime?
+  isSuspended       Boolean            @default(false)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   

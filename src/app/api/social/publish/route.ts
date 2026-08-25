@@ -3,6 +3,7 @@ import { platformRegistry } from '@/lib/integrations/registry';
 import { SocialPlatform } from '@/types';
 import { prisma } from '@/lib/db';
 import { decryptToken } from '@/lib/crypto';
+import { getAuthenticatedUser } from '@/lib/auth-session';
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,9 +23,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, result: demoResult });
     }
 
-    // Live Mode: Lookup connected account in database
+    // Live Mode: Lookup connected account in database for authenticated user
+    const { user } = await getAuthenticatedUser(req);
+    const targetUserId = user ? user.id : undefined;
+
     const socialAccount = await prisma.socialAccount.findFirst({
-      where: { platform: rawPlatform, status: 'CONNECTED' },
+      where: { 
+        platform: rawPlatform, 
+        status: 'CONNECTED',
+        ...(targetUserId ? { userId: targetUserId } : {})
+      },
       include: { oauthTokens: true }
     });
 

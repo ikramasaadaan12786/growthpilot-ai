@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { INITIAL_SOCIAL_ACCOUNTS, INITIAL_PLATFORM_METRICS, DEMO_BENCHMARK_ACCOUNTS, DEMO_BENCHMARK_METRICS } from '@/lib/mock-data';
 import { aggregateConnectedAccountsMetrics } from '@/lib/growth-engine';
+import { getAuthenticatedUser } from '@/lib/auth-session';
 import { prisma } from '@/lib/db';
 import { SocialPlatform, SocialAccountData } from '@/types';
 
@@ -20,8 +21,25 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Query real accounts from database
+    // Authenticate user to enforce multi-tenant isolation
+    const { user } = await getAuthenticatedUser(req);
+
+    // If no user is logged in, return clean unauthenticated/empty connected state
+    if (!user) {
+      return NextResponse.json({
+        success: true,
+        mode: 'LIVE',
+        authenticated: false,
+        accounts: INITIAL_SOCIAL_ACCOUNTS,
+        metrics: INITIAL_PLATFORM_METRICS
+      });
+    }
+
+    // Query real accounts from database STRICTLY for the authenticated user
     const dbAccounts = await prisma.socialAccount.findMany({
+      where: {
+        userId: user.id
+      },
       include: {
         oauthTokens: true
       },
@@ -86,6 +104,14 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       success: true,
       mode: 'LIVE',
+      authenticated: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        plan: user.subscription?.plan || 'PRO'
+      },
       accounts,
       metrics
     });
@@ -99,4 +125,3 @@ export async function GET(req: NextRequest) {
     }, { status: 500 });
   }
 }
-
