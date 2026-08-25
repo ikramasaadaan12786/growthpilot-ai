@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: "GrowthPilot AI | Multi-Platform AI Social Media Growth & Marketing Engine",
   description: "AI-Powered Social Media Growth Platform supporting Instagram, Facebook, LinkedIn, and TikTok with unified analytics, cross-platform content studio, calendar, and legitimate lead generation.",
   other: {
-    'tiktok-developers-site-verification': process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || 'growthpilot-tiktok-domain-verified'
+    'tiktok-developers-site-verification': process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || '4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP'
   }
 };
 
@@ -17,7 +17,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const verificationToken = process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || 'growthpilot-tiktok-domain-verified';
+  const verificationToken = process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || '4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP';
 
   return (
     <html lang="en" className="dark">

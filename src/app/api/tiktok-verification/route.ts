@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     process.env.TIKTOK_SITE_VERIFICATION || 
     process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || 
     requestedToken || 
-    'growthpilot-tiktok-domain-verified';
+    '4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP';
 
   if (format === 'json') {
     return NextResponse.json({

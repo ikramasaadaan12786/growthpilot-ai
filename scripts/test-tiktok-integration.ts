@@ -494,6 +494,32 @@ async function runTikTokIntegrationTests() {
     assert(false, 'Test 24: Zero Client-Side Secret Leakage', err.message);
   }
 
+  // Test 25: Exact TikTok Verification File Validation
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const filePath = path.join(process.cwd(), 'public/tiktok4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP.txt');
+    const fileExists = fs.existsSync(filePath);
+    const content = fileExists ? fs.readFileSync(filePath, 'utf-8').trim() : '';
+
+    const { GET } = await import('../src/app/tiktok4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP.txt/route');
+    const routeRes = await GET();
+    const routeText = await routeRes.text();
+    const routeStatus = routeRes.status;
+
+    const isMatch = content === 'tiktok-developers-site-verification=4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP';
+    const isRouteMatch = routeStatus === 200 && routeText.trim() === 'tiktok-developers-site-verification=4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP';
+
+    assert(
+      Boolean(fileExists && isMatch && isRouteMatch),
+      'Test 25: Official TikTok Verification File Deployment',
+      'Verified tiktok4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP.txt is served with HTTP 200 and exact verification content'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 25: Official TikTok Verification File Deployment', err.message);
+  }
+
   console.log('\n========================================================');
   const passCount = results.filter(r => r.passed).length;
   console.log(`  TEST RESULTS SUMMARY: ${passCount}/${results.length} PASSED`);
