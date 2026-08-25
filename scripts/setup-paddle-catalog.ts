@@ -3,6 +3,7 @@
  * Creates the 4 subscription products and recurring monthly prices with 7-day trials in Paddle Sandbox.
  */
 
+import 'dotenv/config';
 import { PADDLE_PLANS } from '../src/lib/paddle';
 
 const PADDLE_API_URL = process.env.PADDLE_API_URL || 'https://sandbox-api.paddle.com';
@@ -65,7 +66,9 @@ async function setupPaddleCatalog() {
 
   const createdCatalog: Record<string, { productId: string; priceId: string; amount: string }> = {};
 
-  if (PADDLE_API_KEY && PADDLE_API_KEY.startsWith('paddlesb_')) {
+  const isLiveKey = PADDLE_API_KEY && (PADDLE_API_KEY.startsWith('pdl_sdbx_') || PADDLE_API_KEY.startsWith('paddlesb_') || PADDLE_API_KEY.length > 20);
+
+  if (isLiveKey) {
     console.log('--> Initiating live creation via Paddle Sandbox API...\n');
 
     for (const item of CATALOG) {

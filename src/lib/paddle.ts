@@ -22,8 +22,8 @@ export const PADDLE_PLANS: Record<'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS', P
     monthlyPriceUsd: 19,
     paddleAmount: '1900',
     trialDays: 7,
-    productId: process.env.PADDLE_PRODUCT_STARTER || 'pro_01j_starter_growthpilot',
-    priceId: process.env.PADDLE_PRICE_STARTER || 'pri_01j_starter_19_monthly',
+    productId: process.env.PADDLE_PRODUCT_STARTER || 'pro_01m0xf05ykwbzyyrb220p4yvfh',
+    priceId: process.env.PADDLE_PRICE_STARTER || 'pri_01m0xf066ward24rv5p49m4t1a',
     description: '2 social accounts, 50 AI posts/month, automated calendar scheduling, 7-day free trial.'
   },
   PRO: {
@@ -32,8 +32,8 @@ export const PADDLE_PLANS: Record<'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS', P
     monthlyPriceUsd: 49,
     paddleAmount: '4900',
     trialDays: 7,
-    productId: process.env.PADDLE_PRODUCT_PRO || 'pro_01j_pro_growthpilot',
-    priceId: process.env.PADDLE_PRICE_PRO || 'pri_01j_pro_49_monthly',
+    productId: process.env.PADDLE_PRODUCT_PRO || 'pro_01m0xf06gz6ed75w69x9ytk51d',
+    priceId: process.env.PADDLE_PRICE_PRO || 'pri_01m0xf06rqdrgr6n3tz992zamx',
     description: '5 social accounts, 250 AI posts/month, Real Estate AI Engine, Creator Inbox publishing, 7-day free trial.'
   },
   ADVANCED: {
@@ -42,8 +42,8 @@ export const PADDLE_PLANS: Record<'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS', P
     monthlyPriceUsd: 99,
     paddleAmount: '9900',
     trialDays: 7,
-    productId: process.env.PADDLE_PRODUCT_ADVANCED || 'pro_01j_advanced_growthpilot',
-    priceId: process.env.PADDLE_PRICE_ADVANCED || 'pri_01j_advanced_99_monthly',
+    productId: process.env.PADDLE_PRODUCT_ADVANCED || 'pro_01m0xf07300kx3rkaatwx3p44v',
+    priceId: process.env.PADDLE_PRICE_ADVANCED || 'pri_01m0xf07aepnef9mwxk36pmwv2',
     description: '15 social accounts, unlimited AI posts, Lead CRM, full analytics & growth score, 7-day free trial.'
   },
   BUSINESS: {
@@ -52,8 +52,8 @@ export const PADDLE_PLANS: Record<'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS', P
     monthlyPriceUsd: 199,
     paddleAmount: '19900',
     trialDays: 7,
-    productId: process.env.PADDLE_PRODUCT_BUSINESS || 'pro_01j_business_growthpilot',
-    priceId: process.env.PADDLE_PRICE_BUSINESS || 'pri_01j_business_199_monthly',
+    productId: process.env.PADDLE_PRODUCT_BUSINESS || 'pro_01m0xf07khxqwejpk522r8kyy9',
+    priceId: process.env.PADDLE_PRICE_BUSINESS || 'pri_01m0xf07v13qncqm47f7p375g7',
     description: 'Unlimited social accounts, team collaboration, white-label PDF reports, emergency kill-switch, 7-day free trial.'
   }
 };
@@ -76,7 +76,7 @@ export async function createPaddleCheckoutTransaction(params: {
 }> {
   const { userId, userEmail, plan, successUrl } = params;
   const planConfig = PADDLE_PLANS[plan] || PADDLE_PLANS.PRO;
-  const isPaddleConfigured = !!(PADDLE_API_KEY && PADDLE_API_KEY.startsWith('paddlesb_'));
+  const isPaddleConfigured = !!(PADDLE_API_KEY && (PADDLE_API_KEY.startsWith('pdl_sdbx_') || PADDLE_API_KEY.startsWith('paddlesb_') || PADDLE_API_KEY.length > 20));
 
   if (!isPaddleConfigured) {
     // Simulated Sandbox activation URL for local tests & seamless initial demo
