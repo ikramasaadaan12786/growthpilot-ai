@@ -60,8 +60,7 @@ export function OAuthModal({ platform, isOpen, onClose, onSuccess }: OAuthModalP
           provider: 'TikTok Content Posting API v2',
           permissions: [
             'Read public profile information and creator metrics (user.info.basic)',
-            'Direct video publishing and draft scheduling (video.publish)',
-            'Retrieve video views, watch time, and completion rate analytics'
+            'Video upload and draft scheduling (video.upload)'
           ],
           note: 'Complies with TikTok Official Developer Terms. Requires user video approval for commercial sound usage.'
         };

@@ -42,6 +42,7 @@ async function runRealLoginTestSuite() {
   console.log('========================================================================\n');
 
   process.env.LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID || '78xy99201a4bc5';
+  process.env.TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || 'test_tiktok_client_key_123';
   const ig = new InstagramIntegration();
   const fb = new FacebookIntegration();
   const li = new LinkedInIntegration();

@@ -120,7 +120,15 @@ export default function SocialAccountsPage() {
             className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
           >
             <Server className="w-3.5 h-3.5 text-pink-400" />
-            <span>Meta API Diagnostic</span>
+            <span>Meta Diagnostic</span>
+          </Link>
+
+          <Link
+            href="/tiktok-review"
+            className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors"
+          >
+            <PlatformIcon platform="TIKTOK" size={14} />
+            <span>TikTok Review</span>
           </Link>
 
           <button

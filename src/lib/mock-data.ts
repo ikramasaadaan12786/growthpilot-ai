@@ -84,7 +84,7 @@ export const INITIAL_SOCIAL_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 0,
     status: 'NOT_CONNECTED',
     lastSyncAt: 'Never',
-    officialScopes: ['user.info.basic', 'video.list', 'video.upload', 'video.publish'],
+    officialScopes: ['user.info.basic', 'video.upload'],
     rateLimitUsage: { used: 0, total: 300 }
   }
 ];
@@ -155,7 +155,7 @@ export const DEMO_BENCHMARK_ACCOUNTS: SocialAccountData[] = [
     growthPercentage: 22.1,
     status: 'DEMO_CONNECTED',
     lastSyncAt: '1 min ago',
-    officialScopes: ['user.info.basic', 'video.list', 'video.upload', 'video.publish'],
+    officialScopes: ['user.info.basic', 'video.upload'],
     rateLimitUsage: { used: 55, total: 300 }
   }
 ];

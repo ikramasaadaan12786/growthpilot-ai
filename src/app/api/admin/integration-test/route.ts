@@ -131,7 +131,8 @@ export async function POST(req: NextRequest) {
         if (!scopesGranted.includes('openid')) analyticsStatus = 'REQUIRES_APPROVAL';
         if (!scopesGranted.includes('w_member_social')) publishingStatus = 'REQUIRES_APPROVAL';
       } else if (platform === 'TIKTOK') {
-        if (!scopesGranted.includes('video.publish')) publishingStatus = 'REQUIRES_APPROVAL';
+        if (!scopesGranted.includes('user.info.basic')) analyticsStatus = 'REQUIRES_APPROVAL';
+        if (!scopesGranted.includes('video.upload')) publishingStatus = 'REQUIRES_APPROVAL';
       }
 
       results[platform] = {

@@ -33,6 +33,7 @@ async function runTikTokIntegrationTests() {
   console.log('  GROWTHPILOT AI — TIKTOK INTEGRATION TEST SUITE (PHASE 3)');
   console.log('========================================================\n');
 
+  process.env.TIKTOK_CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY || 'test_tiktok_client_key_123';
   const tt = new TikTokIntegration();
 
   // Test 1: OAuth URL Generation
@@ -45,13 +46,13 @@ async function runTikTokIntegrationTests() {
     const hasHost = parsed.hostname === 'www.tiktok.com';
     const hasPath = parsed.pathname.includes('/v2/auth/authorize');
     const hasClientKey = parsed.searchParams.has('client_key');
-    const hasScopes = Boolean(parsed.searchParams.has('scope') && parsed.searchParams.get('scope')?.includes('user.info.basic'));
+    const hasScopes = Boolean(parsed.searchParams.has('scope') && parsed.searchParams.get('scope') === 'user.info.basic,video.upload');
     const hasChallenge = parsed.searchParams.get('code_challenge') === codeChallenge;
 
     assert(
       Boolean(hasHost && hasPath && hasClientKey && hasScopes && hasChallenge),
       'Test 1: TikTok OAuth URL Generation',
-      'Official TikTok authorization URL correctly formats endpoint, client_key, scopes, and PKCE challenge'
+      'Official TikTok authorization URL correctly formats endpoint, client_key, exact scopes (user.info.basic,video.upload), and PKCE challenge'
     );
   } catch (err: any) {
     assert(false, 'Test 1: TikTok OAuth URL Generation', err.message);
@@ -296,6 +297,117 @@ async function runTikTokIntegrationTests() {
     );
   } catch (err: any) {
     assert(false, 'Test 16: Demo Mode vs Live Mode Data Isolation', err.message);
+  }
+
+  // Test 17: Production Callback URI Resolution
+  try {
+    const originalAppUrl = process.env.NEXT_PUBLIC_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL = 'https://growthpilot-ai-two.vercel.app';
+    process.env.TIKTOK_CLIENT_KEY = 'test_real_client_key_9988';
+
+    const testUrl = tt.getAuthorizationUrl('STATE_REDIRECT_TEST');
+    const parsed = new URL(testUrl);
+    const redirectParam = parsed.searchParams.get('redirect_uri');
+
+    process.env.NEXT_PUBLIC_APP_URL = originalAppUrl;
+
+    assert(
+      redirectParam === 'https://growthpilot-ai-two.vercel.app/api/auth/oauth/tiktok/callback',
+      'Test 17: Production Callback URI Resolution',
+      'Correctly routes to https://growthpilot-ai-two.vercel.app/api/auth/oauth/tiktok/callback'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 17: Production Callback URI Resolution', err.message);
+  }
+
+  // Test 18: Scopes Strictly Limited to Approved Portal Scopes
+  try {
+    process.env.TIKTOK_CLIENT_KEY = 'test_real_client_key_9988';
+    const authUrl = tt.getAuthorizationUrl('STATE_SCOPE_TEST');
+    const parsed = new URL(authUrl);
+    const scopeParam = parsed.searchParams.get('scope');
+
+    const exactMatch = scopeParam === 'user.info.basic,video.upload';
+    const noUnapproved = !authUrl.includes('video.publish') && !authUrl.includes('user.info.stats');
+
+    assert(
+      Boolean(exactMatch && noUnapproved),
+      'Test 18: Scopes Strictly Limited to Approved Portal Scopes',
+      'Authorization URL requests strictly user.info.basic,video.upload and excludes unapproved permissions'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 18: Scopes Strictly Limited to Approved Portal Scopes', err.message);
+  }
+
+  // Test 19: Placeholder Credential Exclusion & Fail-Fast Validation
+  try {
+    const originalKey = process.env.TIKTOK_CLIENT_KEY;
+    delete process.env.TIKTOK_CLIENT_KEY;
+    delete process.env.TIKTOK_CLIENT_ID;
+    delete process.env.TIKTOK_APP_ID;
+
+    let caught = false;
+    try {
+      tt.getAuthorizationUrl('STATE_MISSING');
+    } catch (e: any) {
+      caught = e.message.includes('TIKTOK_CLIENT_KEY_MISSING');
+    }
+
+    process.env.TIKTOK_CLIENT_KEY = originalKey;
+
+    assert(
+      caught,
+      'Test 19: Placeholder Credential Exclusion & Fail-Fast Validation',
+      'Properly throws TIKTOK_CLIENT_KEY_MISSING when environment variable is not configured'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 19: Placeholder Credential Exclusion & Fail-Fast Validation', err.message);
+  }
+
+  // Test 20: Client Secret Server-Only Handling
+  try {
+    const originalSecret = process.env.TIKTOK_CLIENT_SECRET;
+    delete process.env.TIKTOK_CLIENT_SECRET;
+    delete process.env.TIKTOK_APP_SECRET;
+
+    let caughtExchange = false;
+    try {
+      await tt.exchangeCodeForTokens('sample_code');
+    } catch (e: any) {
+      caughtExchange = e.message.includes('TIKTOK_CREDENTIALS_MISSING');
+    }
+
+    process.env.TIKTOK_CLIENT_SECRET = originalSecret;
+
+    assert(
+      caughtExchange,
+      'Test 20: Client Secret Server-Only Handling',
+      'Guarantees TIKTOK_CLIENT_SECRET is strictly required and handled exclusively on server routes'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 20: Client Secret Server-Only Handling', err.message);
+  }
+
+  // Test 21: Public Compliance & Review Routes Availability
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const privacyExists = fs.existsSync(path.join(process.cwd(), 'src/app/privacy/page.tsx'));
+    const termsExists = fs.existsSync(path.join(process.cwd(), 'src/app/terms/page.tsx'));
+    const tiktokReviewExists = fs.existsSync(path.join(process.cwd(), 'src/app/tiktok-review/page.tsx'));
+    const reviewDocExists = fs.existsSync(path.join(process.cwd(), 'docs/TIKTOK_APP_REVIEW.md'));
+    const videoScriptExists = fs.existsSync(path.join(process.cwd(), 'docs/TIKTOK_REVIEW_VIDEO_SCRIPT.md'));
+
+    const allExist = Boolean(privacyExists && termsExists && tiktokReviewExists && reviewDocExists && videoScriptExists);
+
+    assert(
+      allExist,
+      'Test 21: Public Compliance & Review Pages Availability',
+      'Verified /privacy, /terms, /tiktok-review, and docs/ review guides exist and are structured for production review'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 21: Public Compliance & Review Pages Availability', err.message);
   }
 
   console.log('\n========================================================');

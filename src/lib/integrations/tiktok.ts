@@ -7,13 +7,18 @@ import { SocialPlatform, PlatformMetrics } from '@/types';
 export class TikTokIntegration extends BaseSocialIntegration {
   readonly platform: SocialPlatform = 'TIKTOK';
   readonly platformName = 'TikTok for Business & Creators';
+  
+  // Active initial TikTok OAuth authorization scopes (Login Kit & Content Posting API)
   readonly requiredScopes = [
     'user.info.basic',
-    'user.info.profile',
+    'video.upload'
+  ];
+
+  // Optional capabilities requiring separate TikTok Developer review (future upgrade)
+  readonly optionalScopes = [
+    'video.publish',
     'user.info.stats',
-    'video.list',
-    'video.upload',
-    'video.publish'
+    'video.list'
   ];
   readonly documentationUrl = 'https://developers.tiktok.com/doc/content-posting-api-get-started';
 
@@ -46,10 +51,21 @@ export class TikTokIntegration extends BaseSocialIntegration {
    * Generates official TikTok OAuth 2.0 authorization URL
    */
   getAuthorizationUrl(state: string, codeChallenge?: string): string {
-    const clientKey = this.getClientKey() || 'growthpilot_tiktok_client_key';
+    const clientKey = this.getClientKey();
+    if (!clientKey || clientKey === 'growthpilot_tiktok_client_key' || clientKey.includes('placeholder')) {
+      throw new Error('TIKTOK_CLIENT_KEY_MISSING: TIKTOK_CLIENT_KEY environment variable is missing or unconfigured.');
+    }
     const redirectUri = this.getRedirectUri();
-    const scopeParam = encodeURIComponent(this.requiredScopes.join(','));
-    let url = `${this.oauthBase}/?client_key=${clientKey}&scope=${scopeParam}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
+    
+    // Scopes strictly restricted to approved portal scopes
+    let scopes = [...this.requiredScopes];
+    if (process.env.TIKTOK_SCOPES) {
+      scopes = process.env.TIKTOK_SCOPES.split(/[,\s]+/).filter(Boolean);
+    }
+    
+    // Comma-delimited per TikTok OAuth v2 specification
+    const scopeParam = encodeURIComponent(scopes.join(','));
+    let url = `${this.oauthBase}/?client_key=${encodeURIComponent(clientKey)}&scope=${scopeParam}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`;
     if (codeChallenge) {
       url += `&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256`;
     }
@@ -64,14 +80,8 @@ export class TikTokIntegration extends BaseSocialIntegration {
     const clientSecret = this.getClientSecret();
     const redirectUri = this.getRedirectUri();
 
-    if (!clientKey || !clientSecret || clientKey.includes('demo') || clientKey.includes('growthpilot')) {
-      return {
-        accessToken: `tt_live_${Date.now()}_token_mock_auth`,
-        refreshToken: `tt_refresh_${Date.now()}`,
-        expiresIn: 86400, // 24 hours
-        tokenType: 'Bearer',
-        scope: this.requiredScopes.join(',')
-      };
+    if (!clientKey || !clientSecret || clientKey === 'growthpilot_tiktok_client_key' || clientSecret === 'growthpilot_tiktok_client_secret') {
+      throw new Error('TIKTOK_CREDENTIALS_MISSING: TIKTOK_CLIENT_KEY or TIKTOK_CLIENT_SECRET environment variable is missing.');
     }
 
     try {

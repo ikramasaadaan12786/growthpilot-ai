@@ -131,6 +131,15 @@ export function Sidebar() {
             Launch Real Estate Studio
           </Link>
         </div>
+
+        {/* Legal & Review Links */}
+        <div className="mt-3 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+          <Link href="/privacy" className="hover:text-slate-300 transition-colors">Privacy</Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-slate-300 transition-colors">Terms</Link>
+          <span>•</span>
+          <Link href="/tiktok-review" className="hover:text-rose-400 text-slate-400 transition-colors">TikTok Review</Link>
+        </div>
       </div>
     </aside>
   );
