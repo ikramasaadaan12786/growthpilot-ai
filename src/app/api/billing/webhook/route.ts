@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { verifyPaddleWebhookSignature, mapPaddleStatus } from '@/lib/paddle';
+import { verifyPaddleWebhookSignature, mapPaddleStatus, getPlanFromPaddlePriceId } from '@/lib/paddle';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -58,10 +58,10 @@ export async function POST(req: NextRequest) {
       const dataObject = event.data || {};
       const customData = dataObject.custom_data || {};
       const userId = customData.userId || dataObject.customer_id;
-      const plan = customData.plan || 'PRO';
+      const paddlePriceId = dataObject.items?.[0]?.price?.id || dataObject.details?.line_items?.[0]?.price_id;
+      const plan = customData.plan || getPlanFromPaddlePriceId(paddlePriceId);
       const paddleSubId = dataObject.id;
       const paddleCustomerId = dataObject.customer_id;
-      const paddlePriceId = dataObject.items?.[0]?.price?.id;
       const rawStatus = dataObject.status || 'active';
       const mappedStatus = mapPaddleStatus(rawStatus);
 

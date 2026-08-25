@@ -192,3 +192,17 @@ export function mapPaddleStatus(paddleStatus: string): 'TRIALING' | 'ACTIVE' | '
       return 'ACTIVE';
   }
 }
+
+/**
+ * Derives subscription tier directly from Paddle Price ID
+ */
+export function getPlanFromPaddlePriceId(priceId?: string): 'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS' {
+  if (!priceId) return 'PRO';
+  for (const [planKey, config] of Object.entries(PADDLE_PLANS)) {
+    if (config.priceId === priceId || config.productId === priceId) {
+      return planKey as any;
+    }
+  }
+  return 'PRO';
+}
+
