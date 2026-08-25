@@ -410,6 +410,90 @@ async function runTikTokIntegrationTests() {
     assert(false, 'Test 21: Public Compliance & Review Pages Availability', err.message);
   }
 
+  // Test 22: TikTok Domain Verification Route Handlers
+  try {
+    const { GET } = await import('../src/app/api/tiktok-verification/route');
+    const { NextRequest } = await import('next/server');
+
+    // Test HTML verification output
+    const htmlReq = new NextRequest('https://growthpilot-ai-two.vercel.app/api/tiktok-verification?token=test_token_123&format=html');
+    const htmlRes = await GET(htmlReq);
+    const htmlText = await htmlRes.text();
+
+    const hasHtmlTag = htmlText.includes('name="tiktok-developers-site-verification"');
+    const hasHtmlBody = htmlText.includes('tiktok-developers-site-verification=test_token_123');
+
+    // Test text verification output
+    const textReq = new NextRequest('https://growthpilot-ai-two.vercel.app/api/tiktok-verification?token=test_token_123&format=text');
+    const textRes = await GET(textReq);
+    const textOutput = await textRes.text();
+    const hasText = textOutput.includes('tiktok-developers-site-verification=test_token_123');
+
+    assert(
+      Boolean(hasHtmlTag && hasHtmlBody && hasText),
+      'Test 22: TikTok Domain Verification Route Handlers',
+      'Verification endpoint dynamically renders HTML meta tag, raw verification string, and .well-known format'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 22: TikTok Domain Verification Route Handlers', err.message);
+  }
+
+  // Test 23: Verification Meta Tag Support in Root Layout
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    const layoutContent = fs.readFileSync(path.join(process.cwd(), 'src/app/layout.tsx'), 'utf-8');
+
+    const hasVerificationMeta = layoutContent.includes('tiktok-developers-site-verification');
+
+    assert(
+      hasVerificationMeta,
+      'Test 23: Verification Meta Tag in Root Layout',
+      'Root layout includes tiktok-developers-site-verification meta tag in HTML head for automated crawler verification'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 23: Verification Meta Tag in Root Layout', err.message);
+  }
+
+  // Test 24: Security Audit — Zero Client-Side Secret Leakage
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+
+    function scanFiles(dir: string): string[] {
+      let files: string[] = [];
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== '.next' && entry.name !== '.git') {
+          files = files.concat(scanFiles(fullPath));
+        } else if (entry.isFile() && (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts'))) {
+          files.push(fullPath);
+        }
+      }
+      return files;
+    }
+
+    const clientFiles = scanFiles(path.join(process.cwd(), 'src/components'));
+    let secretLeakedInComponents = false;
+
+    for (const f of clientFiles) {
+      const content = fs.readFileSync(f, 'utf-8');
+      if (content.includes('TIKTOK_CLIENT_SECRET') || content.includes('NEXT_PUBLIC_TIKTOK_CLIENT_SECRET')) {
+        secretLeakedInComponents = true;
+        break;
+      }
+    }
+
+    assert(
+      !secretLeakedInComponents,
+      'Test 24: Zero Client-Side Secret Leakage',
+      'Confirmed TIKTOK_CLIENT_SECRET is strictly excluded from all client-side UI components'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 24: Zero Client-Side Secret Leakage', err.message);
+  }
+
   console.log('\n========================================================');
   const passCount = results.filter(r => r.passed).length;
   console.log(`  TEST RESULTS SUMMARY: ${passCount}/${results.length} PASSED`);

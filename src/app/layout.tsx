@@ -7,6 +7,9 @@ import { Header } from "@/components/layout/Header";
 export const metadata: Metadata = {
   title: "GrowthPilot AI | Multi-Platform AI Social Media Growth & Marketing Engine",
   description: "AI-Powered Social Media Growth Platform supporting Instagram, Facebook, LinkedIn, and TikTok with unified analytics, cross-platform content studio, calendar, and legitimate lead generation.",
+  other: {
+    'tiktok-developers-site-verification': process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || 'growthpilot-tiktok-domain-verified'
+  }
 };
 
 export default function RootLayout({
@@ -14,8 +17,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const verificationToken = process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || 'growthpilot-tiktok-domain-verified';
+
   return (
     <html lang="en" className="dark">
+      <head>
+        <meta name="tiktok-developers-site-verification" content={verificationToken} />
+      </head>
       <body className="bg-[#0b0f19] text-slate-100 min-h-screen flex antialiased">
         <AppProvider>
           <div className="flex w-full min-h-screen">
