@@ -141,7 +141,7 @@ function TikTokReviewDemoContent() {
 
     if (isConnectedParam === 'TIKTOK' && isSuccessParam === 'true') {
       setCallbackSuccess(true);
-      addLog('✓ Official TikTok Sandbox OAuth 2.0 PKCE Handshake Completed Successfully!');
+      addLog('✓ Official TikTok Sandbox OAuth 2.0 Handshake Completed Successfully!');
     }
 
     if (errorParam) {
@@ -157,7 +157,7 @@ function TikTokReviewDemoContent() {
   }, [searchParams]);
 
   const handleConnectTikTok = () => {
-    addLog('Initiating official TikTok Developer Sandbox OAuth 2.0 PKCE flow (TIKTOK_SANDBOX_CLIENT_KEY)...');
+    addLog('Initiating official TikTok Developer Sandbox OAuth 2.0 flow (TIKTOK_SANDBOX_CLIENT_KEY)...');
     addLog('Scopes requested: user.info.basic, video.upload');
     window.location.href = '/api/auth/oauth/tiktok/authorize?client=tiktok-demo';
   };
@@ -256,7 +256,7 @@ function TikTokReviewDemoContent() {
           <div className="flex items-start gap-3">
             <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
             <div>
-              <h4 className="text-sm font-bold text-white">Official TikTok Sandbox OAuth 2.0 PKCE Connected!</h4>
+              <h4 className="text-sm font-bold text-white">Official TikTok Sandbox OAuth 2.0 Connected!</h4>
               <p className="text-xs text-emerald-300 mt-0.5">
                 Your TikTok Sandbox Target User has been authenticated, verified via <code className="font-mono text-white">user.info.basic</code>, and encrypted with AES-256-GCM.
               </p>
@@ -271,52 +271,59 @@ function TikTokReviewDemoContent() {
         </div>
       )}
 
-      {/* Dynamic Error Banner */}
+      {/* Dynamic Error Notice Banner */}
       {callbackError && (
-        <div className="bg-rose-950/80 border border-rose-500/80 rounded-2xl p-4 sm:p-5 shadow-2xl flex items-start justify-between gap-4 animate-fadeIn">
+        <div className="bg-rose-950/80 border border-rose-600/80 rounded-2xl p-4 sm:p-5 shadow-2xl flex items-start justify-between gap-4 animate-fadeIn">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
+            <AlertTriangle className="w-5 h-5 text-rose-400 mt-0.5 shrink-0" />
             <div>
-              <h4 className="text-sm font-bold text-white">TikTok Sandbox OAuth Notice [{callbackError.code}]</h4>
+              <h4 className="text-sm font-bold text-white">OAuth Authorization Error</h4>
               <p className="text-xs text-rose-300 mt-0.5 font-mono">
-                {callbackError.message}
+                [{callbackError.code}]: {callbackError.message}
               </p>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  onClick={handleConnectTikTok}
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold transition-colors"
+                >
+                  Retry OAuth Handshake
+                </button>
+                <button
+                  onClick={() => setCallbackError(null)}
+                  className="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           </div>
-          <button 
-            onClick={() => setCallbackError(null)}
-            className="text-xs text-rose-400 hover:text-rose-200 font-semibold shrink-0"
-          >
-            Dismiss
-          </button>
         </div>
       )}
 
-      {/* Top Review Hub Banner */}
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-        <div className="absolute -right-10 -top-10 w-72 h-72 bg-rose-600/10 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
-          <div className="flex items-center gap-3 text-rose-400 font-bold text-xs uppercase tracking-wider">
-            <PlatformIcon platform="TIKTOK" size={20} />
-            <span>TikTok Developer App Review Live Demo Hub</span>
-          </div>
+      {/* Header & App Review Badge */}
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
-            <Link 
-              href="/tiktok-review" 
-              className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors flex items-center gap-1.5"
-            >
-              <FileCheck className="w-3.5 h-3.5" />
-              <span>Review Guidelines Doc</span>
-            </Link>
-            <Link 
-              href="/privacy" 
+            <span className="px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold tracking-wide uppercase flex items-center gap-1.5">
+              <PlatformIcon platform="TIKTOK" size={14} />
+              TikTok Developer App Review Portal
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-medium">
+              v2.0 Production Ready
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/privacy"
+              target="_blank"
               className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
             >
-              Privacy
+              Privacy Policy
             </Link>
-            <Link 
-              href="/terms" 
+            <Link
+              href="/terms"
+              target="_blank"
               className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
             >
               Terms
@@ -328,7 +335,7 @@ function TikTokReviewDemoContent() {
           Login Kit &amp; Content Posting API Interactive Demo
         </h1>
         <p className="text-sm text-slate-400 mt-2 max-w-3xl leading-relaxed">
-          This portal allows TikTok reviewers and creators to test the end-to-end OAuth 2.0 PKCE authentication flow (<code className="text-cyan-400 font-mono">user.info.basic</code>) and initiate short-form video uploads (<code className="text-rose-400 font-mono">video.upload</code>) directly to the TikTok creator inbox.
+          This portal allows TikTok reviewers and creators to test the end-to-end OAuth 2.0 authentication flow (<code className="text-cyan-400 font-mono">user.info.basic</code>) and initiate short-form video uploads (<code className="text-rose-400 font-mono">video.upload</code>) directly to the TikTok creator inbox.
         </p>
 
         {/* Status Indicators */}
@@ -389,7 +396,7 @@ function TikTokReviewDemoContent() {
             </div>
 
             <p className="text-xs text-slate-400 leading-relaxed">
-              Authenticates the creator via official TikTok OAuth 2.0 PKCE. Upon approval, retrieves the creator&apos;s verified handle, display name, and avatar without requesting unnecessary administrative permissions.
+              Authenticates the creator via official TikTok OAuth 2.0. Upon approval, retrieves the creator&apos;s verified handle, display name, and avatar without requesting unnecessary administrative permissions.
             </p>
 
             {isLoadingAccount ? (
@@ -459,7 +466,7 @@ function TikTokReviewDemoContent() {
                   className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-500 via-pink-500 to-cyan-500 hover:opacity-95 text-white font-bold text-sm shadow-lg shadow-rose-500/20 transition-all flex items-center justify-center gap-2"
                 >
                   <PlatformIcon platform="TIKTOK" size={18} />
-                  <span>Connect TikTok via Official OAuth 2.0 PKCE</span>
+                  <span>Connect TikTok via Official OAuth 2.0</span>
                 </button>
                 <div className="text-[10px] text-slate-400">
                   Redirects to official authorization dialog: <code className="text-slate-400 font-mono">https://www.tiktok.com/v2/auth/authorize/</code>
@@ -659,7 +666,7 @@ function TikTokReviewDemoContent() {
               <div className={`p-2.5 rounded-xl border flex items-start gap-2.5 ${isConnected ? 'bg-emerald-950/30 border-emerald-800/60 text-emerald-300' : 'bg-slate-950 border-slate-800 text-slate-400'}`}>
                 <CheckCircle2 className={`w-4 h-4 mt-0.5 shrink-0 ${isConnected ? 'text-emerald-400' : 'text-slate-600'}`} />
                 <div>
-                  <div className="font-bold">1. Login Kit OAuth 2.0 PKCE</div>
+                  <div className="font-bold">1. Login Kit OAuth 2.0</div>
                   <div className="text-[11px] text-slate-400">Authenticates test creator via official TikTok dialog with anti-CSRF state.</div>
                 </div>
               </div>
