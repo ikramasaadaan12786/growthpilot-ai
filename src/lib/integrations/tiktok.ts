@@ -23,17 +23,17 @@ export class TikTokIntegration extends BaseSocialIntegration {
   readonly documentationUrl = 'https://developers.tiktok.com/doc/content-posting-api-get-started';
 
   getClientKey(isSandbox: boolean = false): string {
-    if (isSandbox) {
-      return (process.env.TIKTOK_SANDBOX_CLIENT_KEY || '').trim();
-    }
-    return (process.env.TIKTOK_CLIENT_KEY || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_APP_ID || '').trim();
+    const raw = isSandbox 
+      ? (process.env.TIKTOK_SANDBOX_CLIENT_KEY || '')
+      : (process.env.TIKTOK_CLIENT_KEY || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_APP_ID || '');
+    return raw.trim().split(/\s+/)[0] || '';
   }
 
   getClientSecret(isSandbox: boolean = false): string {
-    if (isSandbox) {
-      return (process.env.TIKTOK_SANDBOX_CLIENT_SECRET || '').trim();
-    }
-    return (process.env.TIKTOK_CLIENT_SECRET || process.env.TIKTOK_APP_SECRET || '').trim();
+    const raw = isSandbox 
+      ? (process.env.TIKTOK_SANDBOX_CLIENT_SECRET || '')
+      : (process.env.TIKTOK_CLIENT_SECRET || process.env.TIKTOK_APP_SECRET || '');
+    return raw.trim().split(/\s+/)[0] || '';
   }
 
   getRedirectUri(isSandbox: boolean = false): string {
