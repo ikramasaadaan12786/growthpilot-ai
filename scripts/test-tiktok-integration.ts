@@ -888,19 +888,19 @@ async function runTikTokIntegrationTests() {
     assert(false, 'Test 43: Zero-Cache Polling & Real-time Notification Banners', err.message);
   }
 
-  // Test 44: Creator Inbox Draft upload routing for video.upload scope
+  // Test 44: Creator Inbox Draft upload routing via FILE_UPLOAD for video.upload scope
   try {
     const fs = await import('fs');
     const path = await import('path');
     const ttSrc = fs.readFileSync(path.join(process.cwd(), 'src/lib/integrations/tiktok.ts'), 'utf-8');
 
     const targetsInboxDirectly = ttSrc.includes('/post/publish/inbox/video/init/');
-    const checksDraftMode = ttSrc.includes("mode === 'DRAFT'") || ttSrc.includes('isDraft');
+    const usesFileUpload = ttSrc.includes("'FILE_UPLOAD'");
 
     assert(
-      Boolean(targetsInboxDirectly && checksDraftMode),
+      Boolean(targetsInboxDirectly && usesFileUpload),
       'Test 44: Content Posting API Creator Inbox Draft Pipeline',
-      'Direct draft mode routes directly to /post/publish/inbox/video/init/ compliant with video.upload scope'
+      'Creator Inbox upload uses FILE_UPLOAD binary streaming compliant with video.upload scope'
     );
   } catch (err: any) {
     assert(false, 'Test 44: Content Posting API Creator Inbox Draft Pipeline', err.message);

@@ -43,27 +43,27 @@ const DEMO_VIDEOS: DemoVideoOption[] = [
   {
     id: 'vid-1',
     title: 'Luxury Villa Tour — Dubai Hills Estate',
-    category: 'Real Estate Reel',
+    category: 'Real Estate Reel (H.264 MP4)',
     duration: '0:28',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+    url: '/sample-video.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&auto=format&fit=crop&q=80',
     caption: '✨ Luxury 5-Bedroom Villa Tour in Dubai Hills Estate. 6,800 SqFt | Private Infinity Pool | 40/60 Payment Plan. #RealEstate #Dubai #LuxuryLiving'
   },
   {
     id: 'vid-2',
     title: 'Passive Income Real Estate Breakdown',
-    category: 'Educational Breakdown',
+    category: 'Educational Breakdown (H.264 MP4)',
     duration: '0:34',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+    url: '/assets/sample-reel.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&auto=format&fit=crop&q=80',
     caption: '📈 How to generate $4,200/month in passive rental yield with off-plan properties. Full numbers breakdown! #Investing #PassiveIncome #Finance'
   },
   {
     id: 'vid-3',
     title: 'Downtown Penthouse Sunset View',
-    category: 'Short Form Showcase',
+    category: 'Short Form Showcase (H.264 MP4)',
     duration: '0:18',
-    url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+    url: '/sample-video.mp4',
     thumbnail: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&auto=format&fit=crop&q=80',
     caption: '🌅 Sunset from the 54th floor penthouse in Downtown. 360 panoramic views. #DubaiSkyline #Penthouse #Architecture'
   }
@@ -191,14 +191,15 @@ function TikTokReviewDemoContent() {
     setUploadResult(null);
     const videoUrlToUse = customVideoUrl.trim() || selectedVideo.url;
 
-    addLog(`1/3 Packaging payload for TikTok Content Posting API v2...`);
-    addLog(`Target: TikTok Creator Inbox (Draft Mode: ${uploadMode}) | Source: PULL_FROM_URL`);
-    addLog(`Video URL: ${videoUrlToUse}`);
+    addLog(`1/4 Checking Creator Posting Eligibility via Content Posting API v2...`);
+    addLog(`Target: TikTok Creator Inbox (Draft Mode: ${uploadMode}) | Pipeline: FILE_UPLOAD`);
+    addLog(`Video Payload: ${selectedVideo.title} (${selectedVideo.duration})`);
 
     try {
-      await new Promise(r => setTimeout(r, 600));
+      await new Promise(r => setTimeout(r, 400));
       setUploadState('UPLOADING');
-      addLog('2/3 Transmitting POST request to /api/social/publish...');
+      addLog('2/4 Initializing Creator Inbox upload session (/v2/post/publish/inbox/video/init/)...');
+      addLog('3/4 Streaming binary video buffer to TikTok upload URL...');
 
       const payload = {
         title: selectedVideo.title,
@@ -223,17 +224,23 @@ function TikTokReviewDemoContent() {
       if (data.success && data.result) {
         setUploadState('SUCCESS');
         setUploadResult(data.result);
-        addLog(`3/3 ✓ TikTok Content Posting API responded HTTP 200 OK!`);
+        addLog(`4/4 ✓ TikTok Content Posting API responded HTTP 200 OK!`);
         addLog(`Publish ID: ${data.result.platformPostId}`);
         addLog(`Status: ${data.result.status} | Video successfully staged in Creator Inbox Draft.`);
       } else {
+        const errorMsg = data.error || data.result?.errorMessage || 'Upload initialization rejected by TikTok API';
         setUploadState('ERROR');
-        setUploadResult(data);
-        addLog(`3/3 ✗ TikTok upload failed: ${data.error || data.result?.errorMessage || 'Unknown error'}`);
+        setUploadResult({
+          error: errorMsg,
+          errorMessage: errorMsg,
+          httpStatus: res.status,
+          result: data.result
+        });
+        addLog(`4/4 ✗ TikTok upload failed: ${errorMsg}`);
       }
     } catch (err: any) {
       setUploadState('ERROR');
-      setUploadResult({ errorMessage: err.message });
+      setUploadResult({ errorMessage: err.message, error: err.message });
       addLog(`✗ Network/API error: ${err.message}`);
     }
   };
@@ -621,14 +628,18 @@ function TikTokReviewDemoContent() {
             )}
 
             {uploadState === 'ERROR' && (
-              <div className="p-4 bg-rose-950/60 border border-rose-800 rounded-xl space-y-1.5 text-xs text-rose-300">
-                <div className="font-bold flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
+              <div className="p-4 bg-rose-950/60 border border-rose-800 rounded-xl space-y-2 text-xs text-rose-300">
+                <div className="font-bold flex items-center gap-2 text-rose-400">
+                  <AlertTriangle className="w-4 h-4" />
                   <span>TikTok API Response / Error Details</span>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed font-mono">
-                  {uploadResult?.error || uploadResult?.errorMessage || 'Check TikTok permissions and verify token health.'}
-                </p>
+                <div className="p-3 bg-black/60 rounded-lg border border-rose-900/50 font-mono text-[11px] text-rose-200 leading-relaxed break-words">
+                  {uploadResult?.error || uploadResult?.errorMessage || 'TikTok Content Posting API rejected upload initialization.'}
+                </div>
+                <div className="text-[10px] text-slate-400">
+                  <span>Note: TikTok Sandbox requires Creator Inbox Draft uploads via </span>
+                  <code className="text-rose-300 font-mono">video.upload</code> scope.
+                </div>
               </div>
             )}
           </div>

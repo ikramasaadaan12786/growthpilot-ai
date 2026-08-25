@@ -58,10 +58,22 @@ export async function POST(req: NextRequest) {
       }
     });
 
-    return NextResponse.json({ success: result.success, result });
+    return NextResponse.json({ 
+      success: result.success, 
+      result,
+      error: !result.success ? (result.errorMessage || 'Publishing operation failed') : undefined 
+    });
   } catch (error: any) {
     console.error('API /api/social/publish error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ 
+      success: false, 
+      error: error.message || 'Internal Server Error',
+      result: {
+        success: false,
+        status: 'FAILED',
+        errorMessage: error.message || 'Internal Server Error'
+      }
+    }, { status: 500 });
   }
 }
 
