@@ -24,24 +24,24 @@ export class TikTokIntegration extends BaseSocialIntegration {
 
   getClientKey(isSandbox: boolean = false): string {
     if (isSandbox) {
-      return process.env.TIKTOK_SANDBOX_CLIENT_KEY || '';
+      return (process.env.TIKTOK_SANDBOX_CLIENT_KEY || '').trim();
     }
-    return process.env.TIKTOK_CLIENT_KEY || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_APP_ID || '';
+    return (process.env.TIKTOK_CLIENT_KEY || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_APP_ID || '').trim();
   }
 
   getClientSecret(isSandbox: boolean = false): string {
     if (isSandbox) {
-      return process.env.TIKTOK_SANDBOX_CLIENT_SECRET || '';
+      return (process.env.TIKTOK_SANDBOX_CLIENT_SECRET || '').trim();
     }
-    return process.env.TIKTOK_CLIENT_SECRET || process.env.TIKTOK_APP_SECRET || '';
+    return (process.env.TIKTOK_CLIENT_SECRET || process.env.TIKTOK_APP_SECRET || '').trim();
   }
 
   getRedirectUri(isSandbox: boolean = false): string {
     if (isSandbox && process.env.TIKTOK_SANDBOX_REDIRECT_URI) {
-      return process.env.TIKTOK_SANDBOX_REDIRECT_URI;
+      return process.env.TIKTOK_SANDBOX_REDIRECT_URI.trim();
     }
     if (process.env.TIKTOK_REDIRECT_URI) {
-      return process.env.TIKTOK_REDIRECT_URI;
+      return process.env.TIKTOK_REDIRECT_URI.trim();
     }
     let base = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || '';
     if (!base && process.env.VERCEL_URL) {
@@ -50,7 +50,7 @@ export class TikTokIntegration extends BaseSocialIntegration {
     if (!base) {
       base = 'http://localhost:3000';
     }
-    return `${base}/api/auth/oauth/tiktok/callback`;
+    return `${base.trim()}/api/auth/oauth/tiktok/callback`;
   }
 
   private readonly oauthBase = 'https://www.tiktok.com/v2/auth/authorize';
