@@ -23,6 +23,8 @@ interface EnvDiagnostics {
   LINKEDIN_CLIENT_SECRET: 'CONFIGURED' | 'MISSING';
   TIKTOK_CLIENT_KEY: 'CONFIGURED' | 'MISSING';
   TIKTOK_CLIENT_SECRET: 'CONFIGURED' | 'MISSING';
+  TIKTOK_SANDBOX_CLIENT_KEY?: 'CONFIGURED' | 'MISSING';
+  TIKTOK_SANDBOX_CLIENT_SECRET?: 'CONFIGURED' | 'MISSING';
   ENCRYPTION_KEY: 'CONFIGURED' | 'MISSING';
   DATABASE: 'CONNECTED' | 'FAILED';
   BACKEND: 'ONLINE' | 'OFFLINE';
@@ -58,8 +60,10 @@ export default function AdminDiagnosticsPage() {
     { key: 'META_CLIENT_SECRET', label: 'Meta App Client Secret', status: diagnostics.META_CLIENT_SECRET, icon: <PlatformIcon platform="FACEBOOK" size={16} /> },
     { key: 'LINKEDIN_CLIENT_ID', label: 'LinkedIn App Client ID', status: diagnostics.LINKEDIN_CLIENT_ID, icon: <PlatformIcon platform="LINKEDIN" size={16} /> },
     { key: 'LINKEDIN_CLIENT_SECRET', label: 'LinkedIn App Client Secret', status: diagnostics.LINKEDIN_CLIENT_SECRET, icon: <PlatformIcon platform="LINKEDIN" size={16} /> },
-    { key: 'TIKTOK_CLIENT_KEY', label: 'TikTok Developer Client Key', status: diagnostics.TIKTOK_CLIENT_KEY, icon: <PlatformIcon platform="TIKTOK" size={16} /> },
-    { key: 'TIKTOK_CLIENT_SECRET', label: 'TikTok Developer Client Secret', status: diagnostics.TIKTOK_CLIENT_SECRET, icon: <PlatformIcon platform="TIKTOK" size={16} /> },
+    { key: 'TIKTOK_CLIENT_KEY', label: 'TikTok Production Client Key', status: diagnostics.TIKTOK_CLIENT_KEY, icon: <PlatformIcon platform="TIKTOK" size={16} /> },
+    { key: 'TIKTOK_CLIENT_SECRET', label: 'TikTok Production Client Secret', status: diagnostics.TIKTOK_CLIENT_SECRET, icon: <PlatformIcon platform="TIKTOK" size={16} /> },
+    { key: 'TIKTOK_SANDBOX_CLIENT_KEY', label: 'TikTok Developer Sandbox Client Key', status: diagnostics.TIKTOK_SANDBOX_CLIENT_KEY || 'MISSING', icon: <PlatformIcon platform="TIKTOK" size={16} /> },
+    { key: 'TIKTOK_SANDBOX_CLIENT_SECRET', label: 'TikTok Developer Sandbox Client Secret', status: diagnostics.TIKTOK_SANDBOX_CLIENT_SECRET || 'MISSING', icon: <PlatformIcon platform="TIKTOK" size={16} /> },
     { key: 'ENCRYPTION_KEY', label: 'AES-256-GCM Vault Key (NEXTAUTH_SECRET)', status: diagnostics.ENCRYPTION_KEY, icon: <Lock className="w-4 h-4 text-emerald-400" /> },
     { key: 'DATABASE', label: 'PostgreSQL Database Connection (Prisma)', status: diagnostics.DATABASE, icon: <Database className="w-4 h-4 text-cyan-400" /> },
     { key: 'BACKEND', label: 'Isolated Backend Server API Runtime', status: diagnostics.BACKEND, icon: <Server className="w-4 h-4 text-indigo-400" /> }

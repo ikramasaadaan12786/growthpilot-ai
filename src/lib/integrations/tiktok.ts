@@ -22,15 +22,24 @@ export class TikTokIntegration extends BaseSocialIntegration {
   ];
   readonly documentationUrl = 'https://developers.tiktok.com/doc/content-posting-api-get-started';
 
-  private getClientKey(): string {
+  getClientKey(isSandbox: boolean = false): string {
+    if (isSandbox) {
+      return process.env.TIKTOK_SANDBOX_CLIENT_KEY || '';
+    }
     return process.env.TIKTOK_CLIENT_KEY || process.env.TIKTOK_CLIENT_ID || process.env.TIKTOK_APP_ID || '';
   }
 
-  private getClientSecret(): string {
+  getClientSecret(isSandbox: boolean = false): string {
+    if (isSandbox) {
+      return process.env.TIKTOK_SANDBOX_CLIENT_SECRET || '';
+    }
     return process.env.TIKTOK_CLIENT_SECRET || process.env.TIKTOK_APP_SECRET || '';
   }
 
-  private getRedirectUri(): string {
+  getRedirectUri(isSandbox: boolean = false): string {
+    if (isSandbox && process.env.TIKTOK_SANDBOX_REDIRECT_URI) {
+      return process.env.TIKTOK_SANDBOX_REDIRECT_URI;
+    }
     if (process.env.TIKTOK_REDIRECT_URI) {
       return process.env.TIKTOK_REDIRECT_URI;
     }
@@ -50,16 +59,30 @@ export class TikTokIntegration extends BaseSocialIntegration {
   /**
    * Generates official TikTok OAuth 2.0 authorization URL
    */
-  getAuthorizationUrl(state: string, codeChallenge?: string): string {
-    const clientKey = this.getClientKey();
-    if (!clientKey || clientKey === 'growthpilot_tiktok_client_key' || clientKey.includes('placeholder')) {
-      throw new Error('TIKTOK_CLIENT_KEY_MISSING: TIKTOK_CLIENT_KEY environment variable is missing or unconfigured.');
-    }
-    const redirectUri = this.getRedirectUri();
+  getAuthorizationUrl(state: string, codeChallenge?: string, isSandboxExplicit?: boolean): string {
+    const isSandbox = isSandboxExplicit !== undefined 
+      ? isSandboxExplicit 
+      : (state.includes('_tiktok-demo_') || state.includes('_sandbox_') || state.startsWith('TIKTOK_tiktok-demo') || state.startsWith('TIKTOK_sandbox'));
+
+    const clientKey = this.getClientKey(isSandbox);
     
-    // Scopes strictly restricted to approved portal scopes
+    if (isSandbox) {
+      if (!clientKey || clientKey === 'growthpilot_tiktok_sandbox_client_key' || clientKey.includes('placeholder')) {
+        throw new Error('TIKTOK_SANDBOX_CLIENT_KEY_MISSING: TIKTOK_SANDBOX_CLIENT_KEY environment variable is missing or unconfigured.');
+      }
+    } else {
+      if (!clientKey || clientKey === 'growthpilot_tiktok_client_key' || clientKey.includes('placeholder')) {
+        throw new Error('TIKTOK_CLIENT_KEY_MISSING: TIKTOK_CLIENT_KEY environment variable is missing or unconfigured.');
+      }
+    }
+
+    const redirectUri = this.getRedirectUri(isSandbox);
+    
+    // Scopes strictly restricted to approved portal scopes (user.info.basic, video.upload)
     let scopes = [...this.requiredScopes];
-    if (process.env.TIKTOK_SCOPES) {
+    if (isSandbox && process.env.TIKTOK_SANDBOX_SCOPES) {
+      scopes = process.env.TIKTOK_SANDBOX_SCOPES.split(/[,\s]+/).filter(Boolean);
+    } else if (process.env.TIKTOK_SCOPES) {
       scopes = process.env.TIKTOK_SCOPES.split(/[,\s]+/).filter(Boolean);
     }
     
@@ -75,13 +98,25 @@ export class TikTokIntegration extends BaseSocialIntegration {
   /**
    * Exchanges authorization code for TikTok OAuth access & refresh tokens
    */
-  async exchangeCodeForTokens(code: string, codeVerifier?: string): Promise<AuthTokens> {
-    const clientKey = this.getClientKey();
-    const clientSecret = this.getClientSecret();
-    const redirectUri = this.getRedirectUri();
+  async exchangeCodeForTokens(code: string, codeVerifier?: string, isSandbox: boolean = false): Promise<AuthTokens> {
+    const clientKey = this.getClientKey(isSandbox);
+    const clientSecret = this.getClientSecret(isSandbox);
+    const redirectUri = this.getRedirectUri(isSandbox);
 
-    if (!clientKey || !clientSecret || clientKey === 'growthpilot_tiktok_client_key' || clientSecret === 'growthpilot_tiktok_client_secret') {
-      throw new Error('TIKTOK_CREDENTIALS_MISSING: TIKTOK_CLIENT_KEY or TIKTOK_CLIENT_SECRET environment variable is missing.');
+    if (isSandbox) {
+      if (!clientKey || clientKey === 'growthpilot_tiktok_sandbox_client_key' || clientKey.includes('placeholder')) {
+        throw new Error('TIKTOK_SANDBOX_CLIENT_KEY_MISSING: TIKTOK_SANDBOX_CLIENT_KEY environment variable is missing or unconfigured.');
+      }
+      if (!clientSecret || clientSecret === 'growthpilot_tiktok_sandbox_client_secret' || clientSecret.includes('placeholder')) {
+        throw new Error('TIKTOK_SANDBOX_CLIENT_SECRET_MISSING: TIKTOK_SANDBOX_CLIENT_SECRET environment variable is missing or unconfigured.');
+      }
+    } else {
+      if (!clientKey || clientKey === 'growthpilot_tiktok_client_key' || clientKey.includes('placeholder')) {
+        throw new Error('TIKTOK_CREDENTIALS_MISSING: TIKTOK_CLIENT_KEY environment variable is missing.');
+      }
+      if (!clientSecret || clientSecret === 'growthpilot_tiktok_client_secret' || clientSecret.includes('placeholder')) {
+        throw new Error('TIKTOK_CREDENTIALS_MISSING: TIKTOK_CLIENT_SECRET environment variable is missing.');
+      }
     }
 
     try {

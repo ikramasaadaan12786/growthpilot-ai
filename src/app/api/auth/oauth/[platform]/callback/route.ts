@@ -36,8 +36,14 @@ export async function GET(
 
     const adapter = platformRegistry.getAdapter(platform);
     
-    // 1. Exchange code for tokens
-    const tokens = await adapter.exchangeCodeForTokens(code);
+    // Parse state parameter to detect client type and sandbox origin
+    const stateParam = url.searchParams.get('state') || '';
+    const stateParts = stateParam.split('_');
+    const clientType = stateParts.length >= 2 ? stateParts[1] : 'web';
+    const isSandbox = clientType === 'tiktok-demo' || clientType === 'sandbox' || clientType.includes('sandbox');
+
+    // 1. Exchange code for tokens with matched sandbox/production credentials
+    const tokens = await (adapter as any).exchangeCodeForTokens(code, undefined, isSandbox);
     
     // 2. Fetch authenticated profile details
     const profile = await adapter.getProfile(tokens.accessToken);
@@ -105,11 +111,6 @@ export async function GET(
         expiresAt: tokens.expiresIn ? new Date(Date.now() + tokens.expiresIn * 1000) : null
       }
     });
-
-    // Parse state parameter to detect client type
-    const stateParam = url.searchParams.get('state') || '';
-    const stateParts = stateParam.split('_');
-    const clientType = stateParts.length >= 2 ? stateParts[1] : 'web';
 
     // 6. Security Audit Log
     await prisma.auditLog.create({

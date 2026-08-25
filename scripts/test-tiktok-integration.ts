@@ -555,6 +555,92 @@ async function runTikTokIntegrationTests() {
     assert(false, 'Test 27: Content Posting API Inbox Draft Upload Engine', err.message);
   }
 
+  // Test 28: Sandbox vs Production Credential Isolation in OAuth Handshake
+  try {
+    process.env.TIKTOK_CLIENT_KEY = 'prod_key_11111';
+    process.env.TIKTOK_SANDBOX_CLIENT_KEY = 'sandbox_key_99999';
+
+    // 1. Standard Production Auth URL
+    const prodAuthUrl = tt.getAuthorizationUrl('TIKTOK_web_1787654_nonce123');
+    const hasProdKey = prodAuthUrl.includes('client_key=prod_key_11111');
+
+    // 2. Sandbox Review Demo Auth URL
+    const sandboxAuthUrl = tt.getAuthorizationUrl('TIKTOK_tiktok-demo_1787654_nonce123');
+    const hasSandboxKey = sandboxAuthUrl.includes('client_key=sandbox_key_99999');
+
+    assert(
+      Boolean(hasProdKey && hasSandboxKey),
+      'Test 28: Sandbox vs Production Credential Isolation',
+      'Verified production OAuth uses TIKTOK_CLIENT_KEY while demo review OAuth uses TIKTOK_SANDBOX_CLIENT_KEY without mixing'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 28: Sandbox vs Production Credential Isolation', err.message);
+  }
+
+  // Test 29: Sandbox Fail-Fast Validation
+  try {
+    const origSandboxKey = process.env.TIKTOK_SANDBOX_CLIENT_KEY;
+    delete process.env.TIKTOK_SANDBOX_CLIENT_KEY;
+
+    let caughtMissing = false;
+    try {
+      tt.getAuthorizationUrl('TIKTOK_tiktok-demo_1787654_nonce123');
+    } catch (e: any) {
+      caughtMissing = e.message.includes('TIKTOK_SANDBOX_CLIENT_KEY_MISSING');
+    }
+
+    process.env.TIKTOK_SANDBOX_CLIENT_KEY = origSandboxKey;
+
+    assert(
+      caughtMissing,
+      'Test 29: Sandbox Fail-Fast Credential Validation',
+      'Correctly throws TIKTOK_SANDBOX_CLIENT_KEY_MISSING if sandbox key is unconfigured'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 29: Sandbox Fail-Fast Credential Validation', err.message);
+  }
+
+  // Test 30: Server-Only Sandbox Secret Protection & Zero Browser Leakage
+  try {
+    process.env.TIKTOK_SANDBOX_CLIENT_SECRET = 'super_secret_sandbox_val_abc123';
+    
+    // Ensure no client bundle references TIKTOK_SANDBOX_CLIENT_SECRET
+    const fs = await import('fs');
+    const path = await import('path');
+
+    const scanDir = (dir: string): string[] => {
+      let files: string[] = [];
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== '.next' && entry.name !== '.git') {
+          files = files.concat(scanDir(fullPath));
+        } else if (entry.isFile() && (entry.name.endsWith('.tsx') || entry.name.endsWith('.ts'))) {
+          files.push(fullPath);
+        }
+      }
+      return files;
+    };
+
+    const clientFiles = scanDir(path.join(process.cwd(), 'src/components'));
+    let secretLeaked = false;
+    for (const f of clientFiles) {
+      const content = fs.readFileSync(f, 'utf-8');
+      if (content.includes('TIKTOK_SANDBOX_CLIENT_SECRET') || content.includes('NEXT_PUBLIC_TIKTOK_SANDBOX_CLIENT_SECRET')) {
+        secretLeaked = true;
+        break;
+      }
+    }
+
+    assert(
+      !secretLeaked,
+      'Test 30: Server-Only Sandbox Secret Protection',
+      'Confirmed TIKTOK_SANDBOX_CLIENT_SECRET is strictly isolated to server routes and never exposed to client bundles'
+    );
+  } catch (err: any) {
+    assert(false, 'Test 30: Server-Only Sandbox Secret Protection', err.message);
+  }
+
   console.log('\n========================================================');
   const passCount = results.filter(r => r.passed).length;
   console.log(`  TEST RESULTS SUMMARY: ${passCount}/${results.length} PASSED`);

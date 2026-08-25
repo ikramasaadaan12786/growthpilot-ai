@@ -109,7 +109,8 @@ export default function TikTokReviewDemoPage() {
   }, []);
 
   const handleConnectTikTok = () => {
-    addLog('Initiating official TikTok OAuth 2.0 PKCE flow (user.info.basic, video.upload)...');
+    addLog('Initiating official TikTok Developer Sandbox OAuth 2.0 PKCE flow (TIKTOK_SANDBOX_CLIENT_KEY)...');
+    addLog('Scopes requested: user.info.basic, video.upload');
     window.location.href = '/api/auth/oauth/tiktok/authorize?client=tiktok-demo';
   };
 
@@ -233,19 +234,19 @@ export default function TikTokReviewDemoPage() {
         {/* Status Indicators */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-6">
           <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400 font-semibold uppercase">Product 1</div>
-            <div className="text-xs font-bold text-cyan-400 flex items-center gap-1.5 mt-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Login Kit
+            <div className="text-[11px] text-slate-400 font-semibold uppercase">OAuth Environment</div>
+            <div className="text-xs font-bold text-amber-400 flex items-center gap-1.5 mt-1">
+              <CheckCircle2 className="w-3.5 h-3.5" /> Sandbox Active
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">user.info.basic</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">TIKTOK_SANDBOX_CLIENT_KEY</div>
           </div>
 
           <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
-            <div className="text-[11px] text-slate-400 font-semibold uppercase">Product 2</div>
+            <div className="text-[11px] text-slate-400 font-semibold uppercase">Verified Scopes</div>
             <div className="text-xs font-bold text-rose-400 flex items-center gap-1.5 mt-1">
-              <CheckCircle2 className="w-3.5 h-3.5" /> Content Posting API
+              <CheckCircle2 className="w-3.5 h-3.5" /> Login + Posting
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">video.upload (Draft &amp; Publish)</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">user.info.basic, video.upload</div>
           </div>
 
           <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3">
