@@ -57,31 +57,55 @@ export async function POST(req: NextRequest) {
       const eventType = event.event_type || event.type;
       const dataObject = event.data || {};
       const customData = dataObject.custom_data || {};
-      const userId = customData.userId || dataObject.customer_id;
-      const paddlePriceId = dataObject.items?.[0]?.price?.id || dataObject.details?.line_items?.[0]?.price_id;
-      const plan = customData.plan || getPlanFromPaddlePriceId(paddlePriceId);
+      
       const paddleSubId = dataObject.id;
       const paddleCustomerId = dataObject.customer_id;
+      const paddlePriceId = dataObject.items?.[0]?.price?.id || dataObject.details?.line_items?.[0]?.price_id;
+      const plan = customData.plan || getPlanFromPaddlePriceId(paddlePriceId);
       const rawStatus = dataObject.status || 'active';
       const mappedStatus = mapPaddleStatus(rawStatus);
+
+      // Resolve user ID with multiple fallback mechanisms
+      let targetUserId = customData.userId;
+      
+      if (!targetUserId && paddleCustomerId) {
+        const subRecord = await prisma.subscription.findFirst({
+          where: { paddleCustomerId: String(paddleCustomerId) }
+        });
+        if (subRecord) {
+          targetUserId = subRecord.userId;
+        }
+      }
+
+      if (!targetUserId && dataObject.customer?.email) {
+        const userRecord = await prisma.user.findUnique({
+          where: { email: dataObject.customer.email.toLowerCase().trim() }
+        });
+        if (userRecord) {
+          targetUserId = userRecord.id;
+        }
+      }
 
       const periodEnd = dataObject.current_billing_period?.ends_at
         ? new Date(dataObject.current_billing_period.ends_at)
         : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-      if (userId) {
+      const isCancelScheduled = !!(dataObject.scheduled_change?.action === 'cancel' || rawStatus === 'canceled');
+
+      if (targetUserId) {
         if (eventType.startsWith('subscription.') || eventType === 'transaction.completed') {
           await prisma.subscription.upsert({
-            where: { userId },
+            where: { userId: targetUserId },
             create: {
-              userId,
+              userId: targetUserId,
               plan,
               status: mappedStatus,
               paddleCustomerId: paddleCustomerId ? String(paddleCustomerId) : null,
               paddleSubscriptionId: paddleSubId ? String(paddleSubId) : null,
               paddlePriceId: paddlePriceId ? String(paddlePriceId) : null,
               currentPeriodStart: new Date(),
-              currentPeriodEnd: periodEnd
+              currentPeriodEnd: periodEnd,
+              cancelAtPeriodEnd: isCancelScheduled
             },
             update: {
               plan,
@@ -89,13 +113,14 @@ export async function POST(req: NextRequest) {
               paddleCustomerId: paddleCustomerId ? String(paddleCustomerId) : undefined,
               paddleSubscriptionId: paddleSubId ? String(paddleSubId) : undefined,
               paddlePriceId: paddlePriceId ? String(paddlePriceId) : undefined,
-              currentPeriodEnd: periodEnd
+              currentPeriodEnd: periodEnd,
+              cancelAtPeriodEnd: isCancelScheduled
             }
           });
 
           await prisma.auditLog.create({
             data: {
-              userId,
+              userId: targetUserId,
               action: 'PADDLE_SUBSCRIPTION_SYNC',
               details: `Paddle Sandbox Event [${eventType}]: Plan ${plan}, Status: ${mappedStatus}, Sub ID: ${paddleSubId}`
             }

@@ -157,6 +157,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
         })
         .catch(() => {});
+
+      // Fetch trusted user session & subscription plan from database
+      fetch('/api/auth/session')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.authenticated && data.user && data.user.subscription) {
+            const rawPlan = data.user.subscription.plan;
+            let normalized: SubscriptionTier = 'PRO';
+            if (rawPlan === 'BASIC' || rawPlan === 'STARTER') normalized = 'BASIC';
+            else if (rawPlan === 'PRO') normalized = 'PRO';
+            else if (rawPlan === 'AGENCY' || rawPlan === 'ADVANCED') normalized = 'AGENCY';
+            else if (rawPlan === 'BUSINESS') normalized = 'BUSINESS';
+            setSubscriptionPlan(normalized);
+          }
+        })
+        .catch(() => {});
       
       const savedCalendar = localStorage.getItem('gp_calendar_posts');
       if (savedCalendar) setCalendarPosts(JSON.parse(savedCalendar));

@@ -242,3 +242,51 @@ export function getPlanFromPaddlePriceId(priceId?: string): 'STARTER' | 'PRO' | 
   return 'PRO';
 }
 
+/**
+ * Cancels a subscription in Paddle Sandbox
+ */
+export async function cancelPaddleSubscription(subscriptionId: string, immediately = false): Promise<{ success: boolean; data?: any; error?: string }> {
+  if (!PADDLE_API_KEY) {
+    return { success: true, data: { status: 'canceled', simulated: true } };
+  }
+
+  try {
+    const response = await fetch(`${PADDLE_API_URL}/subscriptions/${subscriptionId}/cancel`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${PADDLE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        effective_from: immediately ? 'immediately' : 'next_billing_period'
+      })
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error?.detail || data.error?.message || 'Failed to cancel subscription' };
+    }
+
+    return { success: true, data: data.data };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Retrieves full subscription state directly from Paddle Sandbox
+ */
+export async function getPaddleSubscription(subscriptionId: string): Promise<any> {
+  if (!PADDLE_API_KEY) return null;
+  try {
+    const response = await fetch(`${PADDLE_API_URL}/subscriptions/${subscriptionId}`, {
+      headers: { Authorization: `Bearer ${PADDLE_API_KEY}` }
+    });
+    const data = await response.json();
+    return data.data || null;
+  } catch {
+    return null;
+  }
+}
+
+
