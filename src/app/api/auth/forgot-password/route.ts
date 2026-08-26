@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { ensureDatabaseSchema } from '@/lib/db-sync';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    await ensureDatabaseSchema();
     const body = await req.json();
     const { email } = body;
 
