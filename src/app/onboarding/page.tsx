@@ -17,34 +17,21 @@ import {
   Building
 } from 'lucide-react';
 
+import { openPaddleCheckout } from '@/lib/paddle-checkout-client';
+
 export default function OnboardingPage() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS'>('PRO');
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   const handleContinue = async () => {
-    setIsUpgrading(true);
-    // If PRO trial is selected (default), continue directly to private dashboard
-    if (selectedPlan === 'PRO') {
-      router.push('/social-accounts?onboarding=true');
-      return;
-    }
-
-    try {
-      const res = await fetch('/api/billing/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: selectedPlan })
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        router.push('/social-accounts?onboarding=true');
-      }
-    } catch {
-      router.push('/social-accounts?onboarding=true');
-    }
+    setCheckoutError(null);
+    openPaddleCheckout({
+      plan: selectedPlan,
+      onLoading: (l) => setIsUpgrading(l),
+      onError: (err) => setCheckoutError(err)
+    });
   };
 
   return (
@@ -213,14 +200,21 @@ export default function OnboardingPage() {
 
         </div>
 
+        {checkoutError && (
+          <div className="p-4 bg-rose-950/80 border border-rose-600/50 rounded-2xl flex items-center justify-between text-xs text-rose-200 shadow-md">
+            <span>{checkoutError}</span>
+            <button onClick={() => setCheckoutError(null)} className="text-[10px] uppercase font-bold text-rose-400 hover:text-white">
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {/* Action Button & Disclaimer */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
             <h3 className="text-base font-bold text-white">Ready to activate your 7-day free trial?</h3>
             <p className="text-xs text-slate-400">
-              {selectedPlan === 'PRO' 
-                ? 'Your 7-day free trial will activate automatically. No charge today.' 
-                : `Proceed with ${selectedPlan} Tier trial activation.`}
+              Proceed with {selectedPlan} Tier trial activation. ($0.00 today).
             </p>
           </div>
 
@@ -229,8 +223,14 @@ export default function OnboardingPage() {
             disabled={isUpgrading}
             className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 shrink-0 group"
           >
-            <span>{selectedPlan === 'PRO' ? 'Start 7-Day Free Trial & Connect Accounts' : 'Proceed to Checkout'}</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            {isUpgrading ? (
+              <span>Opening Checkout...</span>
+            ) : (
+              <>
+                <span>Start 7-Day Free Trial &amp; Proceed</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </button>
         </div>
 

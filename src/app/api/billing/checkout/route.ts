@@ -49,6 +49,9 @@ export async function POST(req: NextRequest) {
       amount: planConfig.paddleAmount,
       currency: 'USD',
       trialDays: planConfig.trialDays,
+      clientToken: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || process.env.PADDLE_CLIENT_TOKEN || '',
+      userId: user.id,
+      userEmail: user.email,
       isSimulated: checkout.isSimulated
     });
   } catch (error: any) {

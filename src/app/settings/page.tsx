@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { SubscriptionTier } from '@/types';
+import { openPaddleCheckout } from '@/lib/paddle-checkout-client';
 
 export default function SettingsPage() {
   const { 
@@ -39,6 +40,8 @@ export default function SettingsPage() {
   const [geminiKey, setGeminiKey] = useState('');
   const [isSaved, setIsSaved] = useState(false);
   const [updateMessage, setUpdateMessage] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [envInfo, setEnvInfo] = useState<{ isProd: boolean; label: string; host: string }>({
     isProd: false,
     label: 'LOCAL DEVELOPMENT (Zero Cost)',
@@ -238,6 +241,21 @@ export default function SettingsPage() {
           <CreditCard className="w-5 h-5 text-indigo-400" />
           <span>Subscription Plans & Client Accounts</span>
         </h3>
+        {checkoutError && (
+          <div className="p-4 bg-rose-950/80 border border-rose-600/50 rounded-2xl flex items-center justify-between text-xs text-rose-200 shadow-md">
+            <div className="flex items-center gap-2.5">
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+              <span>{checkoutError}</span>
+            </div>
+            <button 
+              onClick={() => setCheckoutError(null)}
+              className="text-[10px] uppercase font-bold text-rose-400 hover:text-white"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Starter Plan */}
           <div className={`bg-slate-900 border rounded-2xl p-5 shadow-card flex flex-col justify-between transition-all ${
@@ -258,18 +276,25 @@ export default function SettingsPage() {
             </div>
 
             <button
-              onClick={async () => {
-                const res = await fetch('/api/billing/checkout', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ plan: 'STARTER' })
+              onClick={() => {
+                setCheckoutError(null);
+                openPaddleCheckout({
+                  plan: 'STARTER',
+                  onLoading: (l) => setLoadingPlan(l ? 'STARTER' : null),
+                  onError: (err) => setCheckoutError(err)
                 });
-                const data = await res.json();
-                if (data.url) window.location.href = data.url;
               }}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors"
+              disabled={loadingPlan === 'STARTER'}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2"
             >
-              {subscriptionPlan === 'STARTER' ? 'Active Tier' : 'Upgrade ($19/mo)'}
+              {loadingPlan === 'STARTER' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400" />
+                  <span>Opening Checkout...</span>
+                </>
+              ) : (
+                subscriptionPlan === 'STARTER' ? 'Active Tier' : 'Upgrade ($19/mo)'
+              )}
             </button>
           </div>
 
@@ -295,18 +320,25 @@ export default function SettingsPage() {
             </div>
 
             <button
-              onClick={async () => {
-                const res = await fetch('/api/billing/checkout', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ plan: 'PRO' })
+              onClick={() => {
+                setCheckoutError(null);
+                openPaddleCheckout({
+                  plan: 'PRO',
+                  onLoading: (l) => setLoadingPlan(l ? 'PRO' : null),
+                  onError: (err) => setCheckoutError(err)
                 });
-                const data = await res.json();
-                if (data.url) window.location.href = data.url;
               }}
-              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/30 transition-all"
+              disabled={loadingPlan === 'PRO'}
+              className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-extrabold shadow-md shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
             >
-              {subscriptionPlan === 'PRO' ? 'Active Tier' : 'Upgrade ($49/mo)'}
+              {loadingPlan === 'PRO' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                  <span>Opening Checkout...</span>
+                </>
+              ) : (
+                subscriptionPlan === 'PRO' ? 'Active Tier' : 'Upgrade ($49/mo)'
+              )}
             </button>
           </div>
 
@@ -330,18 +362,25 @@ export default function SettingsPage() {
             </div>
 
             <button
-              onClick={async () => {
-                const res = await fetch('/api/billing/checkout', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ plan: 'ADVANCED' })
+              onClick={() => {
+                setCheckoutError(null);
+                openPaddleCheckout({
+                  plan: 'ADVANCED',
+                  onLoading: (l) => setLoadingPlan(l ? 'ADVANCED' : null),
+                  onError: (err) => setCheckoutError(err)
                 });
-                const data = await res.json();
-                if (data.url) window.location.href = data.url;
               }}
-              className="w-full py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:opacity-95 text-white rounded-xl text-xs font-bold transition-all"
+              disabled={loadingPlan === 'ADVANCED'}
+              className="w-full py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:opacity-95 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
             >
-              {subscriptionPlan === 'ADVANCED' ? 'Active Tier' : 'Upgrade ($99/mo)'}
+              {loadingPlan === 'ADVANCED' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
+                  <span>Opening Checkout...</span>
+                </>
+              ) : (
+                subscriptionPlan === 'ADVANCED' ? 'Active Tier' : 'Upgrade ($99/mo)'
+              )}
             </button>
           </div>
 
@@ -365,18 +404,25 @@ export default function SettingsPage() {
             </div>
 
             <button
-              onClick={async () => {
-                const res = await fetch('/api/billing/checkout', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ plan: 'BUSINESS' })
+              onClick={() => {
+                setCheckoutError(null);
+                openPaddleCheckout({
+                  plan: 'BUSINESS',
+                  onLoading: (l) => setLoadingPlan(l ? 'BUSINESS' : null),
+                  onError: (err) => setCheckoutError(err)
                 });
-                const data = await res.json();
-                if (data.url) window.location.href = data.url;
               }}
-              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all"
+              disabled={loadingPlan === 'BUSINESS'}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
             >
-              {subscriptionPlan === 'BUSINESS' ? 'Active Tier' : 'Upgrade ($199/mo)'}
+              {loadingPlan === 'BUSINESS' ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                  <span>Opening Checkout...</span>
+                </>
+              ) : (
+                subscriptionPlan === 'BUSINESS' ? 'Active Tier' : 'Upgrade ($199/mo)'
+              )}
             </button>
           </div>
         </div>

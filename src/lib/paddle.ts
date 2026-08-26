@@ -116,13 +116,16 @@ export async function createPaddleCheckoutTransaction(params: {
 
     const data = await response.json();
 
-    if (!response.ok || !data.data?.checkout?.url) {
+    if (!response.ok || !data.data?.id) {
       throw new Error(data.error?.detail || data.error?.message || 'Failed to create Paddle transaction');
     }
 
+    const transactionId = data.data.id;
+    const checkoutUrl = data.data.checkout?.url || `${successUrl}${successUrl.includes('?') ? '&' : '?'}_ptxn=${transactionId}`;
+
     return {
-      url: data.data.checkout.url,
-      transactionId: data.data.id,
+      url: checkoutUrl,
+      transactionId,
       priceId: planConfig.priceId,
       isSimulated: false,
       paddleEnv: 'sandbox'
