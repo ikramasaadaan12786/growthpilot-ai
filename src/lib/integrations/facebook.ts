@@ -3,14 +3,12 @@
 
 import { BaseSocialIntegration, AuthTokens, PlatformProfile, PublishPayload, PublishResult } from './base';
 import { SocialPlatform, PlatformMetrics } from '@/types';
+import { FACEBOOK_PAGE_OAUTH_SCOPES, validateMetaScopes } from '@/lib/meta-permissions';
 
 export class FacebookIntegration extends BaseSocialIntegration {
   readonly platform: SocialPlatform = 'FACEBOOK';
   readonly platformName = 'Facebook Pages';
-  readonly requiredScopes = [
-    'pages_show_list',
-    'pages_read_engagement'
-  ];
+  readonly requiredScopes = [...FACEBOOK_PAGE_OAUTH_SCOPES];
   readonly documentationUrl = 'https://developers.facebook.com/docs/pages-api';
 
   private getAppId(): string {
@@ -43,7 +41,8 @@ export class FacebookIntegration extends BaseSocialIntegration {
   getAuthorizationUrl(state: string, _codeChallenge?: string, _isSandbox?: boolean): string {
     const appId = this.getAppId() || 'growthpilot_meta_app_id';
     const redirectUri = this.getRedirectUri();
-    const scopeParam = encodeURIComponent(this.requiredScopes.join(','));
+    const { cleanedScopes } = validateMetaScopes(this.requiredScopes, 'FACEBOOK_LOGIN_FOR_PAGES');
+    const scopeParam = encodeURIComponent(cleanedScopes.join(','));
     return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&scope=${scopeParam}&response_type=code`;
   }
 

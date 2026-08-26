@@ -3,15 +3,12 @@
 
 import { BaseSocialIntegration, AuthTokens, PlatformProfile, PublishPayload, PublishResult } from './base';
 import { SocialPlatform, PlatformMetrics } from '@/types';
+import { INSTAGRAM_OAUTH_SCOPES, validateMetaScopes } from '@/lib/meta-permissions';
 
 export class InstagramIntegration extends BaseSocialIntegration {
   readonly platform: SocialPlatform = 'INSTAGRAM';
   readonly platformName = 'Instagram Professional';
-  readonly requiredScopes = [
-    'instagram_basic',
-    'pages_show_list',
-    'pages_read_engagement'
-  ];
+  readonly requiredScopes = [...INSTAGRAM_OAUTH_SCOPES];
   readonly documentationUrl = 'https://developers.facebook.com/docs/instagram-platform';
 
   private getAppId(): string {
@@ -44,7 +41,8 @@ export class InstagramIntegration extends BaseSocialIntegration {
   getAuthorizationUrl(state: string, _codeChallenge?: string, _isSandbox?: boolean): string {
     const appId = this.getAppId() || 'growthpilot_meta_app_id';
     const redirectUri = this.getRedirectUri();
-    const scopeParam = encodeURIComponent(this.requiredScopes.join(','));
+    const { cleanedScopes } = validateMetaScopes(this.requiredScopes, 'FACEBOOK_LOGIN_FOR_INSTAGRAM');
+    const scopeParam = encodeURIComponent(cleanedScopes.join(','));
     return `https://www.facebook.com/v20.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&scope=${scopeParam}&response_type=code`;
   }
 

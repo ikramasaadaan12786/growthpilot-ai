@@ -225,8 +225,8 @@ async function runMetaIntegrationTests() {
 
   // Test 11: Least-Privilege Meta OAuth Scopes Verification (Prevents "Invalid Scopes" Error)
   try {
-    const igScopes = ig.requiredScopes;
-    const fbScopes = fb.requiredScopes;
+    const igScopes = ig.requiredScopes as string[];
+    const fbScopes = fb.requiredScopes as string[];
 
     const igHasBasic = igScopes.includes('instagram_basic');
     const igHasShowList = igScopes.includes('pages_show_list');
