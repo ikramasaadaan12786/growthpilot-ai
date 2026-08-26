@@ -3,6 +3,7 @@ import "./globals.css";
 import { AppProvider } from "@/lib/store";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { Footer } from "@/components/layout/Footer";
 import { PaddleScript } from "@/components/common/PaddleScript";
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({
               <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden max-w-7xl w-full mx-auto space-y-6 sm:space-y-8">
                 {children}
               </main>
+              <Footer />
             </div>
           </div>
         </AppProvider>
