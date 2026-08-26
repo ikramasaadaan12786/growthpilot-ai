@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import "./globals.css";
 import { AppProvider } from "@/lib/store";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { PaddleScript } from "@/components/common/PaddleScript";
 
 export const metadata: Metadata = {
   title: "GrowthPilot AI | Multi-Platform AI Social Media Growth & Marketing Engine",
@@ -26,7 +26,7 @@ export default function RootLayout({
         <meta name="tiktok-developers-site-verification" content={verificationToken} />
       </head>
       <body className="bg-[#0b0f19] text-slate-100 min-h-screen flex antialiased">
-        <Script src="https://cdn.paddle.com/paddle/v2/paddle.js" strategy="afterInteractive" />
+        <PaddleScript />
         <AppProvider>
           <div className="flex w-full min-h-screen">
             {/* Left Navigation Sidebar */}
