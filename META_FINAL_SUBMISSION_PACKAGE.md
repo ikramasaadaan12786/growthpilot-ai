@@ -1,137 +1,113 @@
 # META FINAL SUBMISSION PACKAGE — GROWTHPILOT AI
-
-**Date**: August 26, 2026  
-**App Name**: GrowthPilot AI  
-**Company**: GrowthPilot AI  
-**Product URL**: [https://growthpilot-ai-two.vercel.app](https://growthpilot-ai-two.vercel.app)  
+**Version**: `1.0.0-beta.1` | **Release Baseline**: Verified Production  
+**Production URL**: [https://growthpilot-ai-two.vercel.app](https://growthpilot-ai-two.vercel.app)  
 **Reviewer Demo Hub**: [https://growthpilot-ai-two.vercel.app/meta-review-demo](https://growthpilot-ai-two.vercel.app/meta-review-demo)  
-**Privacy Policy**: [https://growthpilot-ai-two.vercel.app/privacy](https://growthpilot-ai-two.vercel.app/privacy)  
-**Terms of Service**: [https://growthpilot-ai-two.vercel.app/terms](https://growthpilot-ai-two.vercel.app/terms)  
-**Data Deletion**: [https://growthpilot-ai-two.vercel.app/data-deletion](https://growthpilot-ai-two.vercel.app/data-deletion)  
-**Support**: [https://growthpilot-ai-two.vercel.app/support](https://growthpilot-ai-two.vercel.app/support)  
-**OAuth Redirect URI**: `https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/callback`
+**Admin Review Mode**: [https://growthpilot-ai-two.vercel.app/admin/meta-review](https://growthpilot-ai-two.vercel.app/admin/meta-review)  
+**Hosted Screencast URL**: [https://growthpilot-ai-two.vercel.app/meta-review/GrowthPilot-Meta-App-Review.webm](https://growthpilot-ai-two.vercel.app/meta-review/GrowthPilot-Meta-App-Review.webm)  
+**Local Screencast File**: `C:\Users\Admin\Downloads\GrowthPilot-Meta-App-Review.webm`
 
 ---
 
-## SECTION A — APP DESCRIPTION
+## 1. COMPLIANCE & LEGAL URLS
 
-GrowthPilot AI is an AI-powered social media content management platform designed for real estate professionals, marketing agencies, and solo creators. The platform provides an end-to-end workflow: AI-generated caption and post content → human review and approval → multi-platform publishing to Instagram, Facebook, LinkedIn, and TikTok. GrowthPilot AI does not auto-publish without explicit user action on every post.
-
----
-
-## SECTION B — BUSINESS USE CASE
-
-Real estate agents and marketing agencies use GrowthPilot AI to:
-1. Save 10+ hours/week on creating property-listing content for Instagram and Facebook pages.
-2. Maintain a consistent posting schedule across multiple platforms through a single unified dashboard.
-3. Analyze audience engagement performance with built-in analytics powered by Instagram and Facebook page insights.
-4. Manage approval workflows where content is reviewed by the account owner or a team lead before publishing.
+| Field | Production URL | Status |
+|---|---|---|
+| **Privacy Policy** | `https://growthpilot-ai-two.vercel.app/privacy` | HTTP 200 Live |
+| **Terms of Service** | `https://growthpilot-ai-two.vercel.app/terms` | HTTP 200 Live |
+| **User Data Deletion Callback / Instructions** | `https://growthpilot-ai-two.vercel.app/data-deletion` | HTTP 200 Live |
+| **Customer Support URL** | `https://growthpilot-ai-two.vercel.app/support` | HTTP 200 Live |
+| **Instagram OAuth Redirect URI** | `https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/callback` | HTTP 307 Live |
+| **Facebook Pages OAuth Redirect URI** | `https://growthpilot-ai-two.vercel.app/api/auth/oauth/facebook/callback` | HTTP 307 Live |
 
 ---
 
-## SECTION C — REVIEWER TEST ACCOUNT SETUP
+## 2. APP USE CASES & REQUIRED PERMISSIONS BREAKDOWN
 
-**Test Demo Hub URL**: `https://growthpilot-ai-two.vercel.app/meta-review-demo`
+GrowthPilot AI operates under **TWO** official Meta App Use Cases:
 
-**Test App Role User Credentials** (Meta Developer Portal → App Roles → Testers):
-- The reviewing Facebook employee must be added to the app as a **Test User** or **Tester** in the app's Roles section in the Meta for Developers portal before the review OAuth will function.
+### Use Case 1: "Manage messaging & content on Instagram"
+*API Architecture: Instagram Graph API v20.0 via Facebook Login*
 
-**Test Account Required Capabilities**:
-- A Facebook profile with access to at least one Facebook Page.
-- The Facebook Page should have at least one linked Instagram Professional Account.
-- No special business verification needed for sandbox/development mode.
+#### A. `instagram_basic`
+- **Feature**: Instagram Account Identity & Profile Verification
+- **API Endpoint**: `GET /{ig-user-id}?fields=id,username,profile_picture_url,followers_count`
+- **Copy-Paste Justification**:
+  > GrowthPilot AI uses `instagram_basic` to authenticate the user's professional Instagram account identity and display their verified handle, avatar, and follower count in their unified dashboard. All data is read-only and used solely to confirm the correct account is connected. No private user feed content is read.
+- **Reviewer Instructions**:
+  > 1. Open `https://growthpilot-ai-two.vercel.app/meta-review-demo`.
+  > 2. Click "Step 1: Connect Instagram".
+  > 3. Complete authorization in the popup.
+  > 4. Verify that the Instagram handle, profile picture, and follower statistics display in the dashboard card.
 
----
+#### B. `instagram_content_publish`
+- **Feature**: AI Content Studio — Approved Instagram Post & Reel Publishing
+- **API Endpoint**: `POST /{ig-user-id}/media` (Container creation) → `POST /{ig-user-id}/media_publish`
+- **Copy-Paste Justification**:
+  > GrowthPilot AI uses `instagram_content_publish` to publish posts that users have created and explicitly approved in GrowthPilot's Content Studio. GrowthPilot strictly enforces a mandatory human-in-the-loop approval gate: content remains in DRAFT and cannot be published until the user clicks 'Approve Post'. Publishing executes via the two-step Graph API container creation and publication endpoints.
+- **Reviewer Instructions**:
+  > 1. In `https://growthpilot-ai-two.vercel.app/meta-review-demo`, navigate to Step 3 (Draft AI Content).
+  > 2. Note that content is locked in DRAFT.
+  > 3. Click "Approve Post" to unlock publishing.
+  > 4. Click "Publish to Instagram".
+  > 5. Confirm that the Graph API returns a valid media container ID and confirms publication.
 
-## SECTION D — PERMISSION-BY-PERMISSION JUSTIFICATION
-
-### 1. `instagram_basic`
-
-| Field | Value |
-|---|---|
-| **Why GrowthPilot needs it** | To authenticate the user's Instagram identity and display the connected account handle, profile picture, and follower count on the GrowthPilot social accounts dashboard. |
-| **Where user initiates it** | User navigates to `/social-accounts` → clicks "Connect Instagram" → completes OAuth dialog. |
-| **What data is read/written** | Read-only: Instagram account ID, username, profile picture URL, media count. Nothing is written. |
-| **How user benefits** | User can confirm their correct Instagram account is connected and see current follower / account status at a glance. |
-| **How reviewer can reproduce it** | 1. Open `/meta-review-demo`. 2. Click "Step 1: Connect Instagram". 3. Complete OAuth. 4. Confirm username/avatar appears in dashboard. |
-| **Screencast scene** | Demo Hub → Click Connect → OAuth Dialog → Callback Page → Dashboard with connected account identity visible. |
-
----
-
-### 2. `instagram_content_publish`
-
-| Field | Value |
-|---|---|
-| **Why GrowthPilot needs it** | To submit image and video posts that the user has explicitly reviewed and approved in the content studio to their Instagram account via the two-step Graph API media container + publish flow. |
-| **Where user initiates it** | User navigates to `/content-studio` → drafts post → clicks "Approve & Publish to Instagram". |
-| **What data is read/written** | Writes: Calls `POST /me/media` to create a media container, then `POST /me/media_publish` to publish it after user approval. |
-| **How user benefits** | User can publish AI-drafted or custom Instagram posts directly from GrowthPilot without needing to copy/paste content. |
-| **How reviewer can reproduce it** | 1. Open `/meta-review-demo`. 2. Proceed to Step 3: Draft Content. 3. Click "Approve Post". 4. Click "Publish to Instagram". 5. Confirm publish_id returned. |
-| **Screencast scene** | Content Studio → Draft → Review Screen → "Approve" button click → API call to Graph → Success confirmation modal with post URL. |
-
----
-
-### 3. `instagram_manage_insights`
-
-| Field | Value |
-|---|---|
-| **Why GrowthPilot needs it** | To display real-time Instagram post-level and account-level engagement analytics (impressions, reach, likes, comments, saves) in the GrowthPilot Analytics dashboard, giving users a consolidated view without leaving the app. |
-| **Where user initiates it** | User navigates to `/analytics` → selects "Instagram" from the platform filter. |
-| **What data is read/written** | Read-only: Calls `GET /media/{id}/insights` and `GET /me/insights` metrics. Nothing is written. |
-| **How user benefits** | Users see which content is performing best without switching between apps. Growth score and recommendations are computed from this data. |
-| **How reviewer can reproduce it** | 1. Complete Instagram connect flow. 2. Navigate to `/analytics`. 3. Select Instagram platform. 4. Verify impressions and reach data loads. |
-| **Screencast scene** | Analytics Dashboard → Instagram tab → Chart rendering with impressions/reach/engagement metrics for the past 7 days. |
+#### C. `instagram_manage_insights`
+- **Feature**: Growth & Performance Analytics Dashboard
+- **API Endpoint**: `GET /{ig-user-id}/insights?metric=impressions,reach,profile_views`
+- **Copy-Paste Justification**:
+  > GrowthPilot AI uses `instagram_manage_insights` to display aggregated reach, impression trends, and audience engagement metrics in the unified Analytics dashboard. This allows creators and real estate professionals to track performance across platforms in one place. All metrics are strictly read-only; no user data is shared or modified.
+- **Reviewer Instructions**:
+  > 1. Navigate to `https://growthpilot-ai-two.vercel.app/analytics` after connecting an Instagram account.
+  > 2. Select the Instagram tab.
+  > 3. Verify that impressions, reach, and follower growth trends render on screen.
 
 ---
 
-### 4. `pages_show_list`
+### Use Case 2: "Manage everything on your Page"
+*API Architecture: Facebook Graph API v20.0 via Facebook Login*
 
-| Field | Value |
-|---|---|
-| **Why GrowthPilot needs it** | To retrieve the list of Facebook Pages that the authenticated user administers, so they can select which Page to connect to GrowthPilot for publishing and analytics. |
-| **Where user initiates it** | User navigates to `/social-accounts` → clicks "Connect Facebook Page" → completes OAuth. |
-| **What data is read/written** | Read-only: Calls `GET /me/accounts` to list accessible pages. Nothing is written. |
-| **How user benefits** | Users managing multiple Facebook Pages can select the correct one without having to enter a Page ID manually. |
-| **How reviewer can reproduce it** | 1. Complete Facebook OAuth. 2. Observe page selection screen with a dropdown showing available pages. |
-| **Screencast scene** | Post-OAuth callback → Page Selection Dropdown populated with available Facebook Pages → User selects one → Dashboard shows selected page name. |
+#### D. `pages_show_list`
+- **Feature**: Facebook Page & Linked Instagram Account Discovery
+- **API Endpoint**: `GET /me/accounts?fields=id,name,access_token,instagram_business_account`
+- **Copy-Paste Justification**:
+  > GrowthPilot AI uses `pages_show_list` to list the Facebook Pages administered by the authenticated user. This enables the user to select which Facebook Page and linked Instagram Business Account to connect to GrowthPilot without having to manually locate and input Page IDs. This permission is strictly read-only.
+- **Reviewer Instructions**:
+  > 1. In `https://growthpilot-ai-two.vercel.app/meta-review-demo`, click "Step 2: Connect Facebook Page".
+  > 2. Complete Facebook OAuth in the popup.
+  > 3. Verify that the administered Facebook Page is discovered and listed in the connected accounts view.
 
----
+#### E. `pages_read_engagement`
+- **Feature**: Facebook Page Analytics & Health Center
+- **API Endpoint**: `GET /{page-id}/insights?metric=page_impressions,page_engaged_users`
+- **Copy-Paste Justification**:
+  > GrowthPilot AI uses `pages_read_engagement` to read high-level page engagement, total reach, and follower metrics for connected Facebook Pages to populate the unified analytics overview. Data is read-only.
+- **Reviewer Instructions**:
+  > 1. Open `https://growthpilot-ai-two.vercel.app/analytics`.
+  > 2. Select the Facebook Page tab.
+  > 3. Verify that page impression and engagement metrics are loaded.
 
-### 5. `pages_read_engagement`
-
-| Field | Value |
-|---|---|
-| **Why GrowthPilot needs it** | To display Facebook Page-level engagement analytics (post reach, impressions, fan growth) in the GrowthPilot Analytics dashboard. |
-| **Where user initiates it** | User navigates to `/analytics` → selects "Facebook" platform tab. |
-| **What data is read/written** | Read-only: Calls `GET /{page-id}/insights` with engagement metrics. Nothing is written. |
-| **How user benefits** | Users see combined Instagram + Facebook performance in one dashboard. |
-| **How reviewer can reproduce it** | 1. Connect a Facebook Page. 2. Navigate to `/analytics`. 3. Click Facebook tab. 4. Verify fan count and reach data loads. |
-| **Screencast scene** | Analytics → Facebook tab → Page Insights chart rendering → Engagement metrics visible. |
-
----
-
-### 6. `pages_manage_posts`
-
-| Field | Value |
-|---|---|
-| **Why GrowthPilot needs it** | To publish approved content to the user's connected Facebook Page using `POST /{page-id}/feed` or `POST /{page-id}/photos` on behalf of the page. Every post requires explicit user approval before publishing. |
-| **Where user initiates it** | User navigates to `/content-studio` → drafts or edits content → clicks "Approve & Publish to Facebook". |
-| **What data is read/written** | Writes: `POST /{page-id}/feed` or `/{page-id}/photos`. Only publishes content that the user has approved in the approval workflow. |
-| **How user benefits** | Users publish Facebook page content directly from GrowthPilot after review, eliminating copy-paste workflows. |
-| **How reviewer can reproduce it** | 1. Connect Facebook page. 2. Open `/content-studio`. 3. Draft a post. 4. Approve it. 5. Click "Publish to Facebook". 6. Observe the post_id confirmation. |
-| **Screencast scene** | Content Studio → Facebook Post Draft → Approval Step → Publish button → Success screen with post_id. |
+#### F. `pages_manage_posts`
+- **Feature**: AI Content Studio — Facebook Page Feed Publishing
+- **API Endpoint**: `POST /{page-id}/feed` or `POST /{page-id}/photos`
+- **Copy-Paste Justification**:
+  > GrowthPilot AI uses `pages_manage_posts` to publish user-approved posts, photos, and property announcements directly to the user's selected Facebook Page feed. Content cannot be published automatically; each post requires explicit human review and approval in GrowthPilot before submission.
+- **Reviewer Instructions**:
+  > 1. In `https://growthpilot-ai-two.vercel.app/meta-review-demo`, approve a draft post.
+  > 2. Click "Publish to Facebook Page".
+  > 3. Confirm that the API executes `POST /{page-id}/feed` and returns a valid post ID.
 
 ---
 
-## SECTION E — TEST FLOW (STEP-BY-STEP FOR REVIEWER)
+## 3. SCREENCAST VIDEO EVIDENCE
 
-1. **Open Reviewer Demo Hub**: Navigate to `https://growthpilot-ai-two.vercel.app/meta-review-demo`.
-2. **Register / Log In**: Create a demo account or use the provided test credentials.
-3. **Connect Instagram Account**: Click "Step 1: Connect Instagram" to initiate OAuth.
-4. **Connect Facebook Page**: Click "Step 2: Connect Facebook Page" to initiate Pages OAuth.
-5. **View Account Identity**: Confirm both connected accounts appear in the social accounts section.
-6. **Draft Content**: Click "Step 3: Draft AI Content" to generate a sample post.
-7. **Review Content**: The approval screen appears — content cannot be published without this step.
-8. **Approve & Publish**: Click "Approve" then "Publish to Instagram & Facebook".
-9. **View Analytics**: Navigate to "Step 5: View Analytics" and confirm engagement metrics load.
-10. **Disconnect Accounts**: Click "Step 6: Disconnect" — tokens are immediately purged from database.
+- **File Name**: `GrowthPilot-Meta-App-Review.webm`
+- **Local Path**: `C:\Users\Admin\Downloads\GrowthPilot-Meta-App-Review.webm`
+- **Web Link**: `https://growthpilot-ai-two.vercel.app/meta-review/GrowthPilot-Meta-App-Review.webm`
+- **Screencast Outline**:
+  - **0:00 - 0:15**: GrowthPilot AI Login screen & public app identity.
+  - **0:15 - 0:35**: Instagram & Facebook OAuth popup flows demonstrating clean scope requests.
+  - **0:35 - 0:50**: Account identity confirmation (`instagram_basic`, `pages_show_list`).
+  - **0:50 - 1:15**: Content Studio AI draft + mandatory Human Approval Gate (`Lock` -> `Approve Post`).
+  - **1:15 - 1:30**: Direct Instagram & Facebook publishing flow (`instagram_content_publish`, `pages_manage_posts`).
+  - **1:30 - 1:45**: Analytics Dashboard (`instagram_manage_insights`, `pages_read_engagement`).
+  - **1:45 - 2:00**: Disconnect & permanent AES-256 encrypted token purge.

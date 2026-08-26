@@ -1,86 +1,67 @@
 # OWNER ACTION CENTER — GROWTHPILOT AI
-## Release Baseline: Commit `f239944` | Version `1.0.0-beta.1`
+## Release Baseline: Verified Production | Version `1.0.0-beta.1`
 
-> This document contains every step the owner must personally complete in external dashboards.  
-> Code is complete. No further development is needed. These are portal/human actions only.
+> **IMPORTANT**: All technical code, API routes, security encryption, OAuth popups, and automated QA tests are complete and verified in production on Vercel.  
+> The screencast video has already been recorded and downloaded:
+> • **Local File**: `C:\Users\Admin\Downloads\GrowthPilot-Meta-App-Review.webm`  
+> • **Direct Web Link**: `https://growthpilot-ai-two.vercel.app/meta-review/GrowthPilot-Meta-App-Review.webm`
 
 ---
 
 ## ─────────────────────────────────────────────
-## SECTION 1 — META APP REVIEW SUBMISSION
+## SECTION 1 — META APP REVIEW SUBMISSION (FINAL OWNER ACTIONS)
 ## ─────────────────────────────────────────────
 
-### Step-by-Step Submission
+### Exact Step-by-Step in Meta Developer Portal
 
 1. Log in to [https://developers.facebook.com/apps/](https://developers.facebook.com/apps/)
-2. Select your **GrowthPilot AI** app.
-3. Click **App Review → Permissions and Features** in the left sidebar.
-4. Click **Request** next to each permission below.
-5. For each permission, paste the justification text from **Section 1B** below.
-6. Upload your screencast video per the **Screencast Checklist (Section 1C)**.
-7. Submit for review.
+2. Select your app: **GrowthPilot AI** (App ID: `1379013277028626`).
+3. Under **Use Cases**, configure both active use cases:
+   - **Use Case 1**: **Manage messaging & content on Instagram**
+     - Click **Customize** / **Permissions and features**.
+     - Add: `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`.
+     - Click **Request** next to each permission.
+   - **Use Case 2**: **Manage everything on your Page**
+     - Click **Customize** / **Permissions and features**.
+     - Add: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`.
+     - Click **Request** next to each permission.
+4. For each requested permission, paste the pre-written justification from **Section 1B** below.
+5. In the **Screencast / Video Demonstration** field:
+   - Upload the local video file: `C:\Users\Admin\Downloads\GrowthPilot-Meta-App-Review.webm`
+   - (Or paste the hosted link: `https://growthpilot-ai-two.vercel.app/meta-review/GrowthPilot-Meta-App-Review.webm`)
+6. Fill in the App Details & Compliance URLs:
+   - **Privacy Policy URL**: `https://growthpilot-ai-two.vercel.app/privacy`
+   - **Terms of Service URL**: `https://growthpilot-ai-two.vercel.app/terms`
+   - **User Data Deletion URL**: `https://growthpilot-ai-two.vercel.app/data-deletion`
+   - **Reviewer Demo Hub URL**: `https://growthpilot-ai-two.vercel.app/meta-review-demo`
+7. Click **Submit for Review** (and accept any Meta owner declarations / certifications).
 
 ---
 
-### Permissions Being Requested
+### Permissions Being Requested & Copy-Paste Justifications
 
-| Permission | Type | Justification Summary |
+| Permission | Use Case | Justification Text to Paste |
 |---|---|---|
-| `instagram_basic` | Instagram | Read account identity (username, follower count) for dashboard display |
-| `instagram_content_publish` | Instagram | Publish user-approved posts via two-step Graph API media container flow |
-| `instagram_manage_insights` | Instagram | Display post-level and account-level analytics in GrowthPilot dashboard |
-| `pages_show_list` | Facebook | List Facebook Pages the user administers for page selection |
-| `pages_read_engagement` | Facebook | Display Facebook Page insights (reach, impressions) in analytics dashboard |
-| `pages_manage_posts` | Facebook | Publish approved content to the user's Facebook Page |
+| `instagram_basic` | Instagram | GrowthPilot AI uses `instagram_basic` to authenticate the user's Instagram identity and display their connected account handle, profile picture, and follower count on the unified social accounts dashboard. This data is read-only and used only to confirm the correct account is linked. No content is read from the user's feed. |
+| `instagram_content_publish` | Instagram | GrowthPilot AI uses `instagram_content_publish` to publish posts that the user has explicitly reviewed and approved in the content studio. Publishing follows the two-step Graph API flow: (1) `POST /me/media` creates a media container; (2) `POST /me/media_publish` publishes it only after user approval. Content cannot be published without an explicit user approval action in GrowthPilot's interface. |
+| `instagram_manage_insights` | Instagram | GrowthPilot AI uses `instagram_manage_insights` to display real-time post-level and account-level engagement analytics (impressions, reach, likes, comments, saves) in the GrowthPilot Analytics dashboard. This gives users a consolidated performance view without leaving the app. Data is read-only; nothing is written. |
+| `pages_show_list` | Facebook Pages | GrowthPilot AI uses `pages_show_list` to retrieve the Facebook Pages a user administers (via `GET /me/accounts`) so the user can select which Page to connect for publishing and analytics. This allows users managing multiple pages to select the correct one without entering a Page ID manually. Read-only. |
+| `pages_read_engagement` | Facebook Pages | GrowthPilot AI uses `pages_read_engagement` to display Facebook Page-level analytics (post reach, impressions, fan growth) in the GrowthPilot Analytics dashboard, giving users a combined Instagram + Facebook performance view. Called via `GET /{page-id}/insights`. Read-only. |
+| `pages_manage_posts` | Facebook Pages | GrowthPilot AI uses `pages_manage_posts` to publish content to the user's connected Facebook Page after the user has explicitly approved the content in GrowthPilot's mandatory approval workflow. Publishing is performed via `POST /{page-id}/feed` or `/{page-id}/photos`. No post is published without user approval. |
 
 ---
 
-### Exact Text to Paste — Per Permission
+### Production Compliance Endpoints (Verified Live)
 
-#### `instagram_basic`
-> GrowthPilot AI uses `instagram_basic` to authenticate the user's Instagram identity and display their connected account handle, profile picture, and follower count on the unified social accounts dashboard. This data is read-only and used only to confirm the correct account is linked. No content is read from the user's feed.
-
-#### `instagram_content_publish`
-> GrowthPilot AI uses `instagram_content_publish` to publish posts that the user has explicitly reviewed and approved in the content studio. Publishing follows the two-step Graph API flow: (1) `POST /me/media` creates a media container; (2) `POST /me/media_publish` publishes it only after user approval. Content cannot be published without an explicit user approval action in GrowthPilot's interface.
-
-#### `instagram_manage_insights`
-> GrowthPilot AI uses `instagram_manage_insights` to display real-time post-level and account-level engagement analytics (impressions, reach, likes, comments, saves) in the GrowthPilot Analytics dashboard. This gives users a consolidated performance view without leaving the app. Data is read-only; nothing is written.
-
-#### `pages_show_list`
-> GrowthPilot AI uses `pages_show_list` to retrieve the Facebook Pages a user administers (via `GET /me/accounts`) so the user can select which Page to connect for publishing and analytics. This allows users managing multiple pages to select the correct one without entering a Page ID manually. Read-only.
-
-#### `pages_read_engagement`
-> GrowthPilot AI uses `pages_read_engagement` to display Facebook Page-level analytics (post reach, impressions, fan growth) in the GrowthPilot Analytics dashboard, giving users a combined Instagram + Facebook performance view. Called via `GET /{page-id}/insights`. Read-only.
-
-#### `pages_manage_posts`
-> GrowthPilot AI uses `pages_manage_posts` to publish content to the user's connected Facebook Page after the user has explicitly approved the content in GrowthPilot's mandatory approval workflow. Publishing is performed via `POST /{page-id}/feed` or `/{page-id}/photos`. No post is published without user approval.
-
----
-
-### URLs Required by Reviewer
-
-| Field | URL |
-|---|---|
-| Privacy Policy | `https://growthpilot-ai-two.vercel.app/privacy` |
-| Terms of Service | `https://growthpilot-ai-two.vercel.app/terms` |
-| Data Deletion | `https://growthpilot-ai-two.vercel.app/data-deletion` |
-| Support | `https://growthpilot-ai-two.vercel.app/support` |
-| Reviewer Demo Hub | `https://growthpilot-ai-two.vercel.app/meta-review-demo` |
-| OAuth Redirect URI | `https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/callback` |
-
----
-
-### Screencast Checklist (Meta)
-
-- [ ] Screen recording started (OBS / Loom), no passwords visible
-- [ ] Open `https://growthpilot-ai-two.vercel.app/meta-review-demo`
-- [ ] **Scene 1** (0:00–0:30): Scroll through hub — shows 8 steps
-- [ ] **Scene 2** (0:30–1:30): Click "Connect Instagram & Facebook" → OAuth dialog shows "GrowthPilot AI" app name → authorize → profile identity confirmed
-- [ ] **Scene 3** (1:30–2:45): Generate draft → **Approval step shown explicitly** → Approve → Publish → show `media_id` / `post_id`
-- [ ] **Scene 4** (2:45–3:45): Navigate to `/analytics` → Instagram tab loads charts → Facebook tab loads page insights
-- [ ] **Scene 5** (3:45–4:15): Click "Disconnect" → token deletion confirmed
-- [ ] Total duration: under 5 minutes
-- [ ] No passwords, API keys, or tokens visible at any point
+| Field | URL | Status |
+|---|---|---|
+| Privacy Policy | `https://growthpilot-ai-two.vercel.app/privacy` | HTTP 200 Live |
+| Terms of Service | `https://growthpilot-ai-two.vercel.app/terms` | HTTP 200 Live |
+| Data Deletion | `https://growthpilot-ai-two.vercel.app/data-deletion` | HTTP 200 Live |
+| Support | `https://growthpilot-ai-two.vercel.app/support` | HTTP 200 Live |
+| Reviewer Demo Hub | `https://growthpilot-ai-two.vercel.app/meta-review-demo` | HTTP 200 Live |
+| Admin Review Mode | `https://growthpilot-ai-two.vercel.app/admin/meta-review` | HTTP 200 Live |
+| Hosted Screencast | `https://growthpilot-ai-two.vercel.app/meta-review/GrowthPilot-Meta-App-Review.webm` | HTTP 200 Live |
 
 ---
 
