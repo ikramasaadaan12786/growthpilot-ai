@@ -24,16 +24,18 @@ export async function GET(req: NextRequest) {
     ]);
 
     const activeSubs = subscriptions.filter(s => s.status === 'ACTIVE' || s.status === 'TRIALING').length;
+    
+    // Official GrowthPilot Plans & Breakdown
     const planBreakdown = {
-      FREE: subscriptions.filter(s => s.plan === 'FREE').length,
-      TRIAL: subscriptions.filter(s => s.status === 'TRIALING').length,
-      BASIC: subscriptions.filter(s => s.plan === 'BASIC').length,
-      PRO: subscriptions.filter(s => s.plan === 'PRO' && s.status !== 'TRIALING').length,
-      AGENCY: subscriptions.filter(s => s.plan === 'AGENCY' || s.plan === 'BUSINESS').length
+      STARTER: subscriptions.filter(s => (s.plan === 'STARTER' || s.plan === 'BASIC') && s.status === 'ACTIVE').length,
+      PRO: subscriptions.filter(s => s.plan === 'PRO' && s.status === 'ACTIVE').length,
+      AGENCY: subscriptions.filter(s => (s.plan === 'AGENCY' || s.plan === 'ADVANCED') && s.status === 'ACTIVE').length,
+      BUSINESS: subscriptions.filter(s => s.plan === 'BUSINESS' && s.status === 'ACTIVE').length,
+      TRIALING: subscriptions.filter(s => s.status === 'TRIALING').length
     };
 
-    // Monthly recurring revenue estimate
-    const estimatedMrr = (planBreakdown.BASIC * 29) + (planBreakdown.PRO * 79) + (planBreakdown.AGENCY * 199);
+    // Exact Monthly Recurring Revenue from active paid accounts
+    const realMrr = (planBreakdown.STARTER * 19) + (planBreakdown.PRO * 49) + (planBreakdown.AGENCY * 99) + (planBreakdown.BUSINESS * 199);
 
     return NextResponse.json({
       success: true,
@@ -42,7 +44,8 @@ export async function GET(req: NextRequest) {
         activeSubscriptions: activeSubs,
         totalSocialAccounts,
         planBreakdown,
-        estimatedMrr,
+        mrr: realMrr,
+        arr: realMrr * 12,
         auditLogs: recentAuditLogs.map(a => ({
           id: a.id,
           time: a.createdAt.toISOString(),

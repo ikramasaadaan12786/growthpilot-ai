@@ -176,8 +176,8 @@ export function AdminDashboard() {
             <span className="font-semibold uppercase">Monthly Recurring (MRR)</span>
             <DollarSign className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-3xl font-black text-white font-mono">${stats?.estimatedMrr?.toLocaleString() ?? '...'}</div>
-          <div className="text-[11px] text-emerald-400 font-semibold mt-1">Stripe Recurring Tiers</div>
+          <div className="text-3xl font-black text-white font-mono">${(stats?.mrr ?? stats?.estimatedMrr ?? 0).toLocaleString()}</div>
+          <div className="text-[11px] text-emerald-400 font-semibold mt-1">Paddle Sandbox Catalog</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-card">
@@ -185,8 +185,8 @@ export function AdminDashboard() {
             <span className="font-semibold uppercase">Active Subscriptions</span>
             <Crown className="w-4 h-4 text-cyan-400" />
           </div>
-          <div className="text-3xl font-black text-cyan-400 font-mono">{stats?.activeSubscriptions ?? '...'}</div>
-          <div className="text-[11px] text-slate-400 mt-1">Trial / Basic / Pro / Agency</div>
+          <div className="text-3xl font-black text-cyan-400 font-mono">{stats?.activeSubscriptions ?? '0'}</div>
+          <div className="text-[11px] text-slate-400 mt-1">Starter $19 / Pro $49 / Agency $99 / Biz $199</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-card">
