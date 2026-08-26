@@ -1,5 +1,6 @@
 /**
  * Client-side Paddle.js checkout loader and overlay trigger
+ * Hardened for Paddle Sandbox Billing v2
  */
 
 let isPaddleScriptLoading = false;
@@ -18,7 +19,6 @@ export async function loadPaddleScript(): Promise<any> {
   }
 
   if (isPaddleScriptLoading) {
-    // Wait for script to finish loading
     return new Promise((resolve) => {
       const interval = setInterval(() => {
         if ((window as any).Paddle) {
@@ -41,24 +41,29 @@ export async function loadPaddleScript(): Promise<any> {
       isPaddleScriptLoading = false;
       const paddle = (window as any).Paddle;
       if (paddle) {
-        const env = process.env.NEXT_PUBLIC_PADDLE_ENV || 'sandbox';
-        if (env === 'sandbox') {
-          paddle.Environment.set('sandbox');
-        }
-        const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
-        if (clientToken) {
-          try {
-            paddle.Initialize({ token: clientToken });
-          } catch (e) {
-            console.warn('[Paddle.js] Initialize notice:', e);
+        try {
+          const env = process.env.NEXT_PUBLIC_PADDLE_ENV || 'sandbox';
+          if (env === 'sandbox') {
+            paddle.Environment.set('sandbox');
           }
+          const clientToken = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+          if (clientToken) {
+            paddle.Initialize({
+              token: clientToken,
+              eventCallback: (event: any) => {
+                console.log('[Paddle.js Event]:', event?.name, event?.data || '');
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('[Paddle.js Init Notice]:', e);
         }
       }
       resolve(paddle);
     };
     script.onerror = (err) => {
       isPaddleScriptLoading = false;
-      console.error('[Paddle.js] Script load error:', err);
+      console.error('[Paddle.js Script Load Error]:', err);
       reject(err);
     };
     document.head.appendChild(script);
@@ -97,48 +102,81 @@ export async function openPaddleCheckout(params: {
       throw new Error(data.error || 'Failed to initialize checkout session');
     }
 
-    // 2. Load Paddle.js script on demand
+    // 2. Load Paddle.js
     const paddle = await loadPaddleScript().catch(() => null);
 
-    // 3. If Paddle.js is available and clientToken or transactionId exists, open overlay checkout
-    if (paddle && data.transactionId) {
+    // 3. Configure Paddle.js environment and token
+    if (paddle) {
       try {
-        const env = data.paddleEnv || 'sandbox';
+        const env = data.paddleEnv || process.env.NEXT_PUBLIC_PADDLE_ENV || 'sandbox';
         if (env === 'sandbox') {
           paddle.Environment.set('sandbox');
         }
 
-        if (data.clientToken) {
+        const token = data.clientToken || process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+        if (token) {
           try {
-            paddle.Initialize({ token: data.clientToken });
-          } catch {}
+            paddle.Initialize({
+              token,
+              eventCallback: (event: any) => {
+                console.log('[Paddle Checkout Event]:', event?.name, event?.data || '');
+                if (event?.name === 'checkout.completed') {
+                  window.location.href = `${window.location.origin}/settings?billing=success&provider=paddle&plan=${plan}`;
+                }
+              }
+            });
+          } catch (initErr: any) {
+            console.warn('[Paddle Init Warning]:', initErr?.message);
+          }
         }
 
-        // Open checkout modal using transaction ID or items
-        paddle.Checkout.open({
-          transactionId: data.transactionId,
-          settings: {
-            displayMode: 'overlay',
-            theme: 'dark',
-            successUrl: `${window.location.origin}/settings?billing=success&provider=paddle&plan=${plan}`
-          }
-        });
-        if (onLoading) onLoading(false);
-        return;
+        // 4. Open Checkout Overlay
+        if (data.transactionId) {
+          paddle.Checkout.open({
+            transactionId: data.transactionId,
+            settings: {
+              displayMode: 'overlay',
+              theme: 'dark',
+              locale: 'en',
+              successUrl: `${window.location.origin}/settings?billing=success&provider=paddle&plan=${plan}`
+            }
+          });
+          if (onLoading) onLoading(false);
+          return;
+        } else if (data.priceId) {
+          paddle.Checkout.open({
+            items: [{ priceId: data.priceId, quantity: 1 }],
+            customer: {
+              email: data.userEmail
+            },
+            customData: {
+              userId: data.userId,
+              plan
+            },
+            settings: {
+              displayMode: 'overlay',
+              theme: 'dark',
+              locale: 'en',
+              successUrl: `${window.location.origin}/settings?billing=success&provider=paddle&plan=${plan}`
+            }
+          });
+          if (onLoading) onLoading(false);
+          return;
+        }
       } catch (overlayErr: any) {
-        console.warn('[Paddle.js Overlay] Fallback to checkout URL:', overlayErr.message);
+        console.warn('[Paddle Overlay Fallback]:', overlayErr.message);
       }
     }
 
-    // 4. Fallback: navigate directly to hosted checkout URL
+    // 5. Fallback: If overlay is blocked or not available, navigate to hosted checkout URL
     if (data.url) {
       window.location.href = data.url;
       return;
     }
 
-    throw new Error('No checkout URL or transaction ID returned');
+    throw new Error('No checkout transaction or payment link available');
   } catch (err: any) {
-    console.error('Checkout error:', err);
+    console.error('[GrowthPilot Checkout Error]:', err);
     if (onError) onError(err.message || 'Unable to open checkout');
     if (onLoading) onLoading(false);
   }

@@ -70,6 +70,7 @@ export async function createPaddleCheckoutTransaction(params: {
 }): Promise<{
   url: string;
   transactionId?: string;
+  customerId?: string;
   priceId: string;
   isSimulated: boolean;
   paddleEnv: string;
@@ -91,27 +92,58 @@ export async function createPaddleCheckoutTransaction(params: {
   }
 
   try {
+    // 1. Resolve or create customer in Paddle
+    let customerId: string | undefined = undefined;
+    try {
+      const custRes = await fetch(`${PADDLE_API_URL}/customers`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${PADDLE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: userEmail,
+          name: userEmail.split('@')[0],
+          custom_data: { userId }
+        })
+      });
+      const custData = await custRes.json();
+      if (custData.data?.id) {
+        customerId = custData.data.id;
+      }
+    } catch (custErr: any) {
+      console.warn('[Paddle Customer Warning]:', custErr.message);
+    }
+
+    // 2. Create Paddle Transaction
+    const txBody: any = {
+      items: [
+        {
+          price_id: planConfig.priceId,
+          quantity: 1
+        }
+      ],
+      custom_data: {
+        userId,
+        plan,
+        trialDays: 7
+      },
+      collection_mode: 'automatic'
+    };
+
+    if (customerId) {
+      txBody.customer_id = customerId;
+    } else {
+      txBody.customer_email = userEmail;
+    }
+
     const response = await fetch(`${PADDLE_API_URL}/transactions`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${PADDLE_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        items: [
-          {
-            price_id: planConfig.priceId,
-            quantity: 1
-          }
-        ],
-        customer_email: userEmail,
-        custom_data: {
-          userId,
-          plan,
-          trialDays: 7
-        },
-        return_url: successUrl
-      })
+      body: JSON.stringify(txBody)
     });
 
     const data = await response.json();
@@ -126,6 +158,7 @@ export async function createPaddleCheckoutTransaction(params: {
     return {
       url: checkoutUrl,
       transactionId,
+      customerId,
       priceId: planConfig.priceId,
       isSimulated: false,
       paddleEnv: 'sandbox'
