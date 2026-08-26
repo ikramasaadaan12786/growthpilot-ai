@@ -25,6 +25,20 @@ export async function POST(
     const targetUserId = user ? user.id : (await prisma.user.findFirst({ where: { role: 'ADMIN' } }))?.id;
 
     if (targetUserId) {
+      const userAccounts = await prisma.socialAccount.findMany({
+        where: {
+          platform: rawPlatform,
+          userId: targetUserId
+        }
+      });
+
+      for (const acc of userAccounts) {
+        // Delete all stored OAuth tokens from secure vault
+        await prisma.oAuthToken.deleteMany({
+          where: { socialAccountId: acc.id }
+        });
+      }
+
       await prisma.socialAccount.updateMany({
         where: {
           platform: rawPlatform,

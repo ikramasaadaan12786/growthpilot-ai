@@ -9,8 +9,11 @@ export class InstagramIntegration extends BaseSocialIntegration {
   readonly platformName = 'Instagram Professional';
   readonly requiredScopes = [
     'instagram_basic',
+    'instagram_content_publish',
+    'instagram_manage_insights',
     'pages_show_list',
     'pages_read_engagement',
+    'pages_manage_posts',
     'business_management'
   ];
   readonly documentationUrl = 'https://developers.facebook.com/docs/instagram-platform';

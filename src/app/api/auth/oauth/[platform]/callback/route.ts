@@ -236,6 +236,12 @@ export async function GET(
       return res;
     }
 
+    // Meta Review Demo return path
+    if (clientType === 'meta-review' || clientType === 'meta-demo') {
+      const successUrl = new URL(`/admin/meta-review?connected=${platform}&success=true&account=${encodeURIComponent(profile.username)}`, urlString);
+      return NextResponse.redirect(successUrl);
+    }
+
     // Default Web redirect
     const defaultRes = NextResponse.redirect(new URL(`/social-accounts?connected=${platform}&success=true`, urlString));
     defaultRes.cookies.set('tt_pkce', '', { maxAge: 0, path: '/' });

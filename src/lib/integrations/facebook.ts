@@ -10,6 +10,7 @@ export class FacebookIntegration extends BaseSocialIntegration {
   readonly requiredScopes = [
     'pages_show_list',
     'pages_read_engagement',
+    'pages_manage_posts',
     'business_management'
   ];
   readonly documentationUrl = 'https://developers.facebook.com/docs/pages-api';

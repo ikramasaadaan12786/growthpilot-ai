@@ -400,7 +400,7 @@ export default function MetaReviewRecordingMode() {
                 <div className="text-xs text-amber-200 leading-relaxed">{activeStepData.ownerPause}</div>
                 <div className="flex gap-3">
                   <a
-                    href="https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/authorize"
+                    href={currentStep === 2 ? "/api/auth/oauth/instagram/authorize?client=meta-review" : "/api/auth/oauth/facebook/authorize?client=meta-review"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors"

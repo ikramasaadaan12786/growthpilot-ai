@@ -223,29 +223,28 @@ async function runMetaIntegrationTests() {
     assert(false, 'Test 10: Instagram Personal Account Rejection', err.message);
   }
 
-  // Test 11: Minimal Instagram Initial OAuth Scopes Verification
+  // Test 11: Meta App Review Required Permissions Verification
   try {
     const igScopes = ig.requiredScopes;
+    const fbScopes = fb.requiredScopes;
 
-    const noInsights = !igScopes.includes('instagram_manage_insights');
-    const noOldPublish = !igScopes.includes('instagram_content_publish');
-    const noPublishing = !igScopes.includes('instagram_content_publishing');
-    const noMessages = !igScopes.includes('instagram_manage_messages');
     const hasBasic = igScopes.includes('instagram_basic');
-    const hasShowList = igScopes.includes('pages_show_list');
-    const hasReadEngagement = igScopes.includes('pages_read_engagement');
-    const hasBusiness = igScopes.includes('business_management');
-    const exactLength = igScopes.length === 4;
+    const hasPublish = igScopes.includes('instagram_content_publish');
+    const hasInsights = igScopes.includes('instagram_manage_insights');
+    const hasShowList = igScopes.includes('pages_show_list') && fbScopes.includes('pages_show_list');
+    const hasReadEngagement = igScopes.includes('pages_read_engagement') && fbScopes.includes('pages_read_engagement');
+    const hasManagePosts = igScopes.includes('pages_manage_posts') && fbScopes.includes('pages_manage_posts');
+    const hasBusiness = igScopes.includes('business_management') && fbScopes.includes('business_management');
 
-    const isAllScopesValid = noInsights && noOldPublish && noPublishing && noMessages && hasBasic && hasShowList && hasReadEngagement && hasBusiness && exactLength;
+    const isAllScopesValid = hasBasic && hasPublish && hasInsights && hasShowList && hasReadEngagement && hasManagePosts && hasBusiness;
 
     assert(
       isAllScopesValid,
-      'Test 11: Minimal Instagram Initial OAuth Scopes',
-      `Instagram initial OAuth requests ONLY [${igScopes.join(', ')}] (publishing/insights/messaging removed from initial login)`
+      'Test 11: Meta App Review Required Permissions',
+      `Meta adapters correctly request the 6 review permissions + business_management: [${igScopes.join(', ')}]`
     );
   } catch (err: any) {
-    assert(false, 'Test 11: Minimal Instagram Initial OAuth Scopes', err.message);
+    assert(false, 'Test 11: Meta App Review Required Permissions', err.message);
   }
 
   // Test 12: Production Redirect URI Hierarchy & Protection (Task 4 Verification)
