@@ -9,6 +9,7 @@ export interface AuthenticatedUser {
   role: string;
   companyName: string | null;
   industry: string | null;
+  credits?: number;
   subscription: {
     plan: string;
     status: string;
@@ -46,6 +47,9 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
         });
 
         if (dbUser && !dbUser.isSuspended) {
+          const { getUserCredits } = await import('@/lib/credits');
+          const credits = await getUserCredits(dbUser.id);
+
           return {
             user: {
               id: dbUser.id,
@@ -54,6 +58,7 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
               role: dbUser.role,
               companyName: dbUser.companyName,
               industry: dbUser.industry,
+              credits,
               subscription: dbUser.subscription ? {
                 plan: dbUser.subscription.plan,
                 status: dbUser.subscription.status,

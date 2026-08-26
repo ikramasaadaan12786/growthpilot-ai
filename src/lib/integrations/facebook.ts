@@ -296,10 +296,16 @@ export class FacebookIntegration extends BaseSocialIntegration {
       const data = await res.json();
 
       if (!res.ok || data.error) {
+        const rawErr = data.error?.message || '';
+        const isPermErr = rawErr.includes('permission') || rawErr.includes('pages_manage_posts') || rawErr.includes('OAuthException') || rawErr.includes('(#200)');
+        const message = isPermErr
+          ? 'Direct Facebook Page publishing requires Meta Advanced Access. Your post is safely saved in DRAFT. You can copy the approved caption and media to post directly via your Facebook Page.'
+          : `Facebook Page publish notice: ${rawErr || 'Permission required'}`;
+
         return {
           success: false,
           status: 'FAILED',
-          errorMessage: `Facebook Page publish failed: ${data.error?.message || 'Permission denied or requires App Review'}`
+          errorMessage: message
         };
       }
 

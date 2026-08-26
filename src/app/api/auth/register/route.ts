@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Hash password securely with PBKDF2
     const passwordHash = hashPassword(password);
-    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7-day free trial
+    const periodEnd = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000); // 1 year active period
 
     // Create user and subscription in an isolated transaction
     const newUser = await prisma.user.create({
@@ -53,10 +53,10 @@ export async function POST(req: NextRequest) {
         emailVerified: false,
         subscription: {
           create: {
-            plan: 'PRO',
-            status: 'TRIALING',
+            plan: 'FREE',
+            status: 'ACTIVE',
             currentPeriodStart: new Date(),
-            currentPeriodEnd: trialEnd
+            currentPeriodEnd: periodEnd
           }
         }
       },
@@ -65,12 +65,16 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    // Award 20 signup bonus credits (idempotent)
+    const { awardSignupBonus } = await import('@/lib/credits');
+    await awardSignupBonus(newUser.id);
+
     // Record audit log
     await prisma.auditLog.create({
       data: {
         userId: newUser.id,
         action: 'AUTH_REGISTER',
-        details: `User registered: ${cleanEmail} (14-day PRO trial started)`,
+        details: `User registered: ${cleanEmail} (20 bonus credits awarded, FREE tier)`,
         ipAddress: req.ip || '127.0.0.1',
         userAgent: req.headers.get('user-agent') || 'GrowthPilot SaaS'
       }
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
       email: newUser.email,
       name: newUser.name,
       role: newUser.role,
-      plan: newUser.subscription?.plan || 'PRO'
+      plan: newUser.subscription?.plan || 'FREE'
     });
 
     const response = NextResponse.json({

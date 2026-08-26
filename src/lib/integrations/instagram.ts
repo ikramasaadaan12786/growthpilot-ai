@@ -318,10 +318,16 @@ export class InstagramIntegration extends BaseSocialIntegration {
       const createData = await createRes.json();
 
       if (!createRes.ok || createData.error) {
+        const rawErr = createData.error?.message || '';
+        const isPermErr = rawErr.includes('permission') || rawErr.includes('instagram_content_publish') || rawErr.includes('OAuthException') || rawErr.includes('(#200)');
+        const message = isPermErr
+          ? 'Direct Instagram publishing requires Meta Advanced Access. Your post is safely saved in DRAFT. You can copy the approved caption and media to post directly via the Instagram app.'
+          : `Instagram Media Container notice: ${rawErr || 'Publishing requires approved permissions'}`;
+
         return {
           success: false,
           status: 'FAILED',
-          errorMessage: `Instagram Media Container failed: ${createData.error?.message || 'Publishing requires Meta API approval/access'}`
+          errorMessage: message
         };
       }
 
@@ -348,10 +354,16 @@ export class InstagramIntegration extends BaseSocialIntegration {
       const publishData = await publishRes.json();
 
       if (!publishRes.ok || publishData.error) {
+        const rawErr = publishData.error?.message || '';
+        const isPermErr = rawErr.includes('permission') || rawErr.includes('OAuthException') || rawErr.includes('(#200)');
+        const message = isPermErr
+          ? 'Direct Instagram publishing requires Meta Advanced Access. Your post is safely saved in DRAFT.'
+          : `Instagram Media Publish notice: ${rawErr || 'Permission required'}`;
+
         return {
           success: false,
           status: 'FAILED',
-          errorMessage: `Instagram Media Publish failed: ${publishData.error?.message || 'Permission denied'}`
+          errorMessage: message
         };
       }
 
