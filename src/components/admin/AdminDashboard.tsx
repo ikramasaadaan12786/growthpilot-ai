@@ -339,6 +339,84 @@ export function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* ── Platform Approvals Center ── */}
+      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-white text-base flex items-center gap-2">
+            <span className="text-lg">🎬</span>
+            <span>Platform Approvals — Review Recording Center</span>
+          </h3>
+          <span className="text-xs text-amber-400 font-bold border border-amber-500/40 bg-amber-950/30 px-2 py-0.5 rounded-full">ADMIN ONLY</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Meta */}
+          <div className="bg-slate-950 border border-purple-500/30 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold">M</div>
+              <div>
+                <div className="text-sm font-bold text-white">Meta App Review</div>
+                <div className="text-[10px] text-slate-400">Instagram + Facebook</div>
+              </div>
+            </div>
+            <div className="text-[10px] text-amber-300 border border-amber-500/30 bg-amber-950/20 rounded-lg px-2 py-1.5">
+              Status: NOT SUBMITTED — Owner action required
+            </div>
+            <a
+              href="/admin/meta-review"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black transition-colors"
+            >
+              🎬 START META REVIEW RECORDING FLOW
+            </a>
+            <div className="text-[10px] text-slate-500">Guided 10-step flow · Browser recording · ~90 seconds</div>
+          </div>
+
+          {/* TikTok */}
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-black border border-slate-600 flex items-center justify-center text-white text-sm font-bold">T</div>
+              <div>
+                <div className="text-sm font-bold text-white">TikTok App Review</div>
+                <div className="text-[10px] text-slate-400">Content Posting API</div>
+              </div>
+            </div>
+            <div className="text-[10px] text-amber-300 border border-amber-500/30 bg-amber-950/20 rounded-lg px-2 py-1.5">
+              Status: NOT SUBMITTED — Owner action required
+            </div>
+            <a
+              href="/tiktok-review-demo"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-black transition-colors"
+            >
+              🎬 Open TikTok Review Demo Hub
+            </a>
+            <div className="text-[10px] text-slate-500">Use TIKTOK_SCREENCAST_SCRIPT.md for guidance</div>
+          </div>
+
+          {/* LinkedIn */}
+          <div className="bg-slate-950 border border-slate-700 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-700 flex items-center justify-center text-white text-sm font-bold">in</div>
+              <div>
+                <div className="text-sm font-bold text-white">LinkedIn Org API</div>
+                <div className="text-[10px] text-slate-400">Community Management API</div>
+              </div>
+            </div>
+            <div className="text-[10px] text-amber-300 border border-amber-500/30 bg-amber-950/20 rounded-lg px-2 py-1.5">
+              Status: NOT SUBMITTED — Owner portal action
+            </div>
+            <a
+              href="https://www.linkedin.com/developers/apps/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-2.5 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-black transition-colors"
+            >
+              Open LinkedIn Developer Portal ↗
+            </a>
+            <div className="text-[10px] text-slate-500">Use LINKEDIN_ORG_APPLICATION_PACKAGE.md</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
