@@ -1,6 +1,6 @@
 /**
  * Authoritative Client-Side Paddle SDK Manager
- * Ensures exact single initialization, Sandbox environment set first, and transaction overlay handling.
+ * Single authoritative initialization, token validation, event capturing, and diagnostic logging.
  */
 
 let isInitialized = false;
@@ -13,7 +13,10 @@ export function initializePaddle(config?: { env?: string; clientToken?: string }
   if (!paddle) return;
 
   const env = config?.env || process.env.NEXT_PUBLIC_PADDLE_ENV || 'sandbox';
-  const token = config?.clientToken || process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN;
+  const token = config?.clientToken || process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '';
+
+  const isMaskedToken = token.startsWith('*') || token.includes('****');
+  const isValidFormat = (token.startsWith('test_') || token.startsWith('live_')) && token.length >= 20;
 
   // 1. Environment MUST be set before initialization
   if (currentEnv !== env) {
@@ -23,13 +26,35 @@ export function initializePaddle(config?: { env?: string; clientToken?: string }
     currentEnv = env;
   }
 
-  // 2. Initialize with client token
+  // 2. Diagnostics logging in browser console
+  console.log('[PADDLE_DIAGNOSTICS]', {
+    sdkLoaded: true,
+    environment: env,
+    initialized: isInitialized,
+    tokenPresent: !!token,
+    tokenPrefix: token ? token.substring(0, 5) + '...' : 'NONE',
+    tokenLength: token.length,
+    tokenIsMasked: isMaskedToken,
+    isValidTokenFormat: isValidFormat,
+    hostname: window.location.hostname
+  });
+
+  if (isMaskedToken) {
+    console.error(
+      '[PADDLE ERROR]: NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is set to a masked value (e.g. "****4e38f"). ' +
+      'Please replace it in Vercel environment variables with your full unmasked client-side token ' +
+      '(starts with "test_") from Paddle Sandbox Dashboard -> Developer Tools -> Authentication -> Client-side tokens.'
+    );
+    return;
+  }
+
+  // 3. Initialize with valid client token
   if (token && (currentToken !== token || !isInitialized)) {
     try {
       paddle.Initialize({
         token,
         eventCallback: (event: any) => {
-          console.log('[Paddle.js Event]:', event?.name, event?.data || event);
+          console.log('[PADDLE EVENT]:', event?.name, event?.data || event);
           if (event?.name === 'checkout.completed') {
             window.location.href = `${window.location.origin}/settings?billing=success&provider=paddle`;
           }
@@ -37,9 +62,9 @@ export function initializePaddle(config?: { env?: string; clientToken?: string }
       });
       isInitialized = true;
       currentToken = token;
-      console.log('[Paddle.js]: Initialized in', env, 'mode');
+      console.log('[PADDLE SUCCESS]: Paddle.js initialized successfully in', env, 'mode');
     } catch (e: any) {
-      console.warn('[Paddle.js Init Notice]:', e.message);
+      console.warn('[PADDLE INIT NOTICE]:', e.message);
     }
   }
 }
@@ -65,7 +90,6 @@ export async function openPaddleCheckout(params: {
     });
 
     if (res.status === 401) {
-      // User is not authenticated, redirect to login
       window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}&plan=${plan}`;
       return;
     }
@@ -76,17 +100,28 @@ export async function openPaddleCheckout(params: {
       throw new Error(data.error || 'Failed to initialize checkout session');
     }
 
-    // 2. Ensure Paddle is initialized with returned credentials
+    const token = data.clientToken || process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '';
+    const isMaskedToken = token.startsWith('*') || token.includes('****');
+
+    if (isMaskedToken) {
+      const errMsg = 'Paddle Client Token in Vercel is masked ("****4e38f"). Please add the full unmasked test_... token in Vercel.';
+      console.error('[PADDLE CHECKOUT ERROR]:', errMsg);
+      if (onError) onError(errMsg);
+      if (onLoading) onLoading(false);
+      return;
+    }
+
+    // 2. Ensure Paddle is initialized
     const paddle = (window as any).Paddle;
     if (paddle) {
       initializePaddle({
         env: data.paddleEnv || 'sandbox',
-        clientToken: data.clientToken
+        clientToken: token
       });
 
       // 3. Open Checkout Overlay using transactionId
       if (data.transactionId) {
-        console.log('[Paddle.js] Opening checkout overlay for transaction:', data.transactionId);
+        console.log('[PADDLE CHECKOUT]: Opening overlay with transactionId:', data.transactionId);
         paddle.Checkout.open({
           transactionId: data.transactionId,
           settings: {
@@ -101,7 +136,7 @@ export async function openPaddleCheckout(params: {
       }
     }
 
-    // 4. Fallback: If Paddle.js is not loaded or direct link is needed
+    // 4. Fallback: If Paddle.js overlay is unavailable, use hosted URL
     if (data.url) {
       window.location.href = data.url;
       return;

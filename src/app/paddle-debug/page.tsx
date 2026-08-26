@@ -7,7 +7,8 @@ export default function PaddleDebugPage() {
   const [paddleReady, setPaddleReady] = useState(false);
   const [txnInfo, setTxnInfo] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [clientTokenPrefix, setClientTokenPrefix] = useState('');
+  const [clientTokenValue, setClientTokenValue] = useState('');
+  const [isMasked, setIsMasked] = useState(false);
   const [paddleEnv, setPaddleEnv] = useState('');
 
   const addEvent = (name: string, data?: any) => {
@@ -24,34 +25,43 @@ export default function PaddleDebugPage() {
     const env = process.env.NEXT_PUBLIC_PADDLE_ENV || 'sandbox';
     const token = process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN || '';
     setPaddleEnv(env);
-    setClientTokenPrefix(token ? token.substring(0, 10) + '...' : 'MISSING');
+    setClientTokenValue(token);
+    const masked = token.startsWith('*') || token.includes('****');
+    setIsMasked(masked);
 
-    console.log('[PADDLE DEBUG] Environment:', env);
-    console.log('[PADDLE DEBUG] Token prefix:', token ? token.substring(0, 10) + '...' : 'MISSING');
-    console.log('[PADDLE DEBUG] Current hostname:', window.location.hostname);
+    console.log('[PADDLE_DIAGNOSTICS]', {
+      environment: env,
+      tokenLength: token.length,
+      tokenIsMasked: masked,
+      tokenPrefix: token ? token.substring(0, 5) + '...' : 'NONE',
+      hostname: window.location.hostname
+    });
 
     const checkPaddle = setInterval(() => {
       if ((window as any).Paddle) {
         clearInterval(checkPaddle);
         setPaddleReady(true);
         addEvent('SDK loaded (window.Paddle available)');
-        
+
         try {
           const paddle = (window as any).Paddle;
           if (env === 'sandbox') {
             paddle.Environment.set('sandbox');
             addEvent('Environment set to sandbox');
           }
-          if (token) {
+
+          if (masked) {
+            addEvent('CRITICAL ERROR: Token is masked with asterisks (e.g. "****4e38f"). Paddle cannot authenticate.');
+          } else if (token) {
             paddle.Initialize({
               token,
               eventCallback: (event: any) => {
                 addEvent(`EVENT: ${event?.name}`, event?.data || event);
               }
             });
-            addEvent('Paddle.Initialize called successfully');
+            addEvent('Paddle.Initialize called successfully with token: ' + token.substring(0, 8) + '...');
           } else {
-            addEvent('WARNING: NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is not defined in client bundle');
+            addEvent('WARNING: NEXT_PUBLIC_PADDLE_CLIENT_TOKEN is empty');
           }
         } catch (e: any) {
           addEvent('ERROR initializing Paddle', { message: e.message });
@@ -161,6 +171,21 @@ export default function PaddleDebugPage() {
         </p>
       </div>
 
+      {isMasked && (
+        <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-sm space-y-1">
+          <div className="font-bold flex items-center gap-2 text-rose-200">
+            <span>⚠</span> ROOT CAUSE DETECTED: Masked Client-Side Token in Vercel
+          </div>
+          <p>
+            Your <code className="bg-rose-950 px-1 py-0.5 rounded text-xs text-rose-200">NEXT_PUBLIC_PADDLE_CLIENT_TOKEN</code> is set to the masked value{' '}
+            <code className="bg-rose-950 px-1 py-0.5 rounded text-xs text-rose-200 font-mono">"{clientTokenValue}"</code> instead of the real unmasked token.
+          </p>
+          <p className="text-xs text-rose-300/80">
+            Go to <strong>Paddle Sandbox Dashboard → Developer Tools → Authentication → Client-side tokens</strong>, copy the full unmasked <code className="text-rose-200">test_...</code> token, and update it in Vercel Environment Variables.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
           <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Paddle.js SDK</span>
@@ -173,8 +198,16 @@ export default function PaddleDebugPage() {
           <div className="text-lg font-bold text-sky-400 uppercase">{paddleEnv || 'sandbox'}</div>
         </div>
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-1">
-          <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Client Token Prefix</span>
-          <div className="text-lg font-mono text-indigo-400 font-bold">{clientTokenPrefix}</div>
+          <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Client Token Status</span>
+          <div className="text-lg font-mono font-bold">
+            {isMasked ? (
+              <span className="text-rose-400">MASKED ({clientTokenValue})</span>
+            ) : clientTokenValue ? (
+              <span className="text-emerald-400">{clientTokenValue.substring(0, 8)}...</span>
+            ) : (
+              <span className="text-amber-400">MISSING</span>
+            )}
+          </div>
         </div>
       </div>
 
