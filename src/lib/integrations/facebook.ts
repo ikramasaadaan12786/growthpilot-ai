@@ -9,9 +9,7 @@ export class FacebookIntegration extends BaseSocialIntegration {
   readonly platformName = 'Facebook Pages';
   readonly requiredScopes = [
     'pages_show_list',
-    'pages_read_engagement',
-    'pages_manage_posts',
-    'business_management'
+    'pages_read_engagement'
   ];
   readonly documentationUrl = 'https://developers.facebook.com/docs/pages-api';
 
@@ -31,8 +29,8 @@ export class FacebookIntegration extends BaseSocialIntegration {
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
     }
-    if (!base) {
-      base = 'http://localhost:3000';
+    if (!base || base.includes('localhost')) {
+      base = 'https://growthpilot-ai-two.vercel.app';
     }
     return `${base}/api/auth/oauth/facebook/callback`;
   }

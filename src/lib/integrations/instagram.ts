@@ -9,12 +9,8 @@ export class InstagramIntegration extends BaseSocialIntegration {
   readonly platformName = 'Instagram Professional';
   readonly requiredScopes = [
     'instagram_basic',
-    'instagram_content_publish',
-    'instagram_manage_insights',
     'pages_show_list',
-    'pages_read_engagement',
-    'pages_manage_posts',
-    'business_management'
+    'pages_read_engagement'
   ];
   readonly documentationUrl = 'https://developers.facebook.com/docs/instagram-platform';
 
@@ -34,8 +30,8 @@ export class InstagramIntegration extends BaseSocialIntegration {
     if (!base && process.env.VERCEL_URL) {
       base = `https://${process.env.VERCEL_URL}`;
     }
-    if (!base) {
-      base = 'http://localhost:3000';
+    if (!base || base.includes('localhost')) {
+      base = 'https://growthpilot-ai-two.vercel.app';
     }
     return `${base}/api/auth/oauth/instagram/callback`;
   }

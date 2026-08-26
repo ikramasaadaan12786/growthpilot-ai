@@ -26,8 +26,8 @@ export default function MetaReviewDemoPage() {
 
   const steps = [
     { num: 1, title: 'App Authentication', desc: 'Log in with authorized Meta Test User / Reviewer Account' },
-    { num: 2, title: 'Instagram Professional OAuth', desc: 'Exchange scopes: instagram_basic, instagram_content_publish' },
-    { num: 3, title: 'Facebook Pages OAuth', desc: 'Exchange scopes: pages_show_list, pages_manage_posts' },
+    { num: 2, title: 'Instagram Professional OAuth', desc: 'Exchange scopes: instagram_basic, pages_show_list, pages_read_engagement' },
+    { num: 3, title: 'Facebook Pages OAuth', desc: 'Exchange scopes: pages_show_list, pages_read_engagement' },
     { num: 4, title: 'Account Inspection', desc: 'View live handle, follower count, and connected Page ID' },
     { num: 5, title: 'Content Studio Generation', desc: 'AI generates platform-adapted Real Estate Reels & Posts' },
     { num: 6, title: 'User Review & Approval', desc: 'Human-in-the-loop review state machine before publishing' },
@@ -141,7 +141,7 @@ export default function MetaReviewDemoPage() {
                   The user clicks "Connect Instagram" on the Social Accounts page. GrowthPilot AI redirects to Facebook Dialog OAuth with CSRF protection and requested permissions.
                 </p>
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs font-mono text-slate-300">
-                  <div><strong>Requested Scopes:</strong> <code>instagram_basic, instagram_content_publish</code></div>
+                  <div><strong>Requested Scopes:</strong> <code>instagram_basic, pages_show_list, pages_read_engagement</code></div>
                   <div><strong>Redirect URI:</strong> <code>https://growthpilot-ai-two.vercel.app/api/auth/oauth/instagram/callback</code></div>
                 </div>
                 <div className="flex gap-3 pt-2">
@@ -167,10 +167,10 @@ export default function MetaReviewDemoPage() {
                 <div className="text-xs font-extrabold text-blue-400 uppercase">Step 3 of 8</div>
                 <h2 className="text-xl font-black text-white">Facebook Pages OAuth Connection</h2>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Allows real estate agencies and creators to publish property listings directly to their connected Facebook Business Pages.
+                  Allows real estate agencies and creators to connect and monitor their official Facebook Business Pages.
                 </p>
                 <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2 text-xs font-mono text-slate-300">
-                  <div><strong>Requested Scopes:</strong> <code>pages_show_list, pages_read_engagement, pages_manage_posts</code></div>
+                  <div><strong>Requested Scopes:</strong> <code>pages_show_list, pages_read_engagement</code></div>
                   <div><strong>Security Vault:</strong> Page Access Token is encrypted via AES-256-GCM before database storage.</div>
                 </div>
                 <div className="flex gap-3 pt-2">
