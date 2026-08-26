@@ -20,8 +20,51 @@ export async function GET(
   const clientType = stateParts.length >= 2 ? stateParts[1] : 'web';
   const isSandbox = clientType === 'tiktok-demo' || clientType === 'sandbox' || clientType.includes('sandbox');
 
-  // Helper: return error redirect to the appropriate destination
+  // Helper: return error redirect or popup response to the appropriate destination
   function errorRedirect(errorCode: string, detail?: string): NextResponse {
+    if (clientType === 'meta-review' || clientType === 'meta-demo' || clientType === 'popup') {
+      const errorHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GrowthPilot AI — Authorization Notice</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { background: #020617; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+    .card { background: #0f172a; border: 1px solid #334155; border-radius: 20px; padding: 32px; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+    .badge { width: 52px; height: 52px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: #f87171; font-size: 24px; font-weight: bold; }
+    h2 { font-size: 18px; font-weight: 800; margin: 0 0 8px 0; color: #ffffff; }
+    p { font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 0 0 20px 0; }
+    .btn { display: inline-block; background: #334155; hover: #475569; color: #ffffff; padding: 10px 20px; border-radius: 12px; font-weight: 700; font-size: 13px; text-decoration: none; cursor: pointer; border: none; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">!</div>
+    <h2>Authorization Incomplete</h2>
+    <p>${detail || errorCode}</p>
+    <button class="btn" onclick="window.close()">Close & Return to Review</button>
+  </div>
+  <script>
+    (function() {
+      var errorPayload = {
+        type: 'GROWTHPILOT_META_OAUTH_ERROR',
+        platform: '${params?.platform || ""}',
+        error: '${errorCode}',
+        message: ${JSON.stringify(detail || errorCode)},
+        timestamp: Date.now()
+      };
+      try { if (window.BroadcastChannel) new BroadcastChannel('growthpilot_meta_review_channel').postMessage(errorPayload); } catch(e){}
+      try { localStorage.setItem('growthpilot_meta_oauth_event', JSON.stringify(errorPayload)); } catch(e){}
+      try { if (window.opener && !window.opener.closed) window.opener.postMessage(errorPayload, window.location.origin); } catch(e){}
+      setTimeout(function() { try { window.close(); } catch(e){} }, 2000);
+    })();
+  </script>
+</body>
+</html>`;
+      return new NextResponse(errorHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+
     const dest = isSandbox ? '/tiktok-review-demo' : '/social-accounts';
     const redirectUrl = new URL(dest, urlString);
     redirectUrl.searchParams.set('error', errorCode);
@@ -236,10 +279,70 @@ export async function GET(
       return res;
     }
 
-    // Meta Review Demo return path
-    if (clientType === 'meta-review' || clientType === 'meta-demo') {
-      const successUrl = new URL(`/admin/meta-review?connected=${platform}&success=true&account=${encodeURIComponent(profile.username)}`, urlString);
-      return NextResponse.redirect(successUrl);
+    // Meta Review Demo / Popup communication return path
+    if (clientType === 'meta-review' || clientType === 'meta-demo' || clientType === 'popup') {
+      const popupHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>GrowthPilot AI — Authorization Successful</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { background: #020617; color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; text-align: center; }
+    .card { background: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 32px; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+    .badge { width: 52px; height: 52px; background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto; color: #34d399; font-size: 24px; font-weight: bold; }
+    h2 { font-size: 18px; font-weight: 800; margin: 0 0 8px 0; color: #ffffff; }
+    p { font-size: 13px; color: #94a3b8; line-height: 1.5; margin: 0 0 20px 0; }
+    .status { font-size: 11px; color: #64748b; font-family: monospace; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">✓</div>
+    <h2>${platform} Connected!</h2>
+    <p>Account <strong>@${profile.username}</strong> (${profile.displayName}) authenticated and encrypted.</p>
+    <div class="status">Updating review session and closing popup...</div>
+  </div>
+  <script>
+    (function() {
+      var payload = {
+        type: 'GROWTHPILOT_META_OAUTH_SUCCESS',
+        platform: '${platform}',
+        account: ${JSON.stringify(profile.username)},
+        displayName: ${JSON.stringify(profile.displayName)},
+        accountId: ${JSON.stringify(profile.id)},
+        timestamp: Date.now()
+      };
+
+      // 1. BroadcastChannel
+      try {
+        if (window.BroadcastChannel) {
+          var bc = new BroadcastChannel('growthpilot_meta_review_channel');
+          bc.postMessage(payload);
+        }
+      } catch (e) {}
+
+      // 2. localStorage event
+      try {
+        localStorage.setItem('growthpilot_meta_oauth_event', JSON.stringify(payload));
+      } catch (e) {}
+
+      // 3. window.opener postMessage
+      try {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, window.location.origin);
+        }
+      } catch (e) {}
+
+      // 4. Auto-close popup quickly
+      setTimeout(function() {
+        try { window.close(); } catch (e) {}
+      }, 600);
+    })();
+  </script>
+</body>
+</html>`;
+      return new NextResponse(popupHtml, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
 
     // Default Web redirect
