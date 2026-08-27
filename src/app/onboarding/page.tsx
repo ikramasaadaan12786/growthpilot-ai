@@ -42,13 +42,13 @@ export default function OnboardingPage() {
         <div className="text-center space-y-3">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>Step 2 of 2: 7-Day Free Trial on All Plans</span>
+            <span>Step 2 of 2: Select Your Growth Subscription</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight">
             Choose Your GrowthPilot AI Plan
           </h1>
           <p className="text-sm text-slate-400 max-w-2xl mx-auto">
-            All plans include a full 7-day free trial. After the trial, maintain an active monthly subscription to keep AI growth automation active.
+            Choose the plan that fits your business scale. Contact your dedicated GrowthPilot agent for instant manual activation or support.
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
                 <Check className="w-3.5 h-3.5 text-indigo-400" /> Automated Calendar
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-indigo-400" /> 7-Day Free Trial
+                <Check className="w-3.5 h-3.5 text-indigo-400" /> Instant Activation Desk
               </li>
             </ul>
           </div>
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
                 <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Creator Inbox Direct Post
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> 7-Day Free Trial
+                <Check className="w-3.5 h-3.5 text-emerald-400 font-bold" /> Instant Activation Desk
               </li>
             </ul>
           </div>
@@ -157,7 +157,7 @@ export default function OnboardingPage() {
                 <Check className="w-3.5 h-3.5 text-cyan-400" /> Weekly AI Performance Reports
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-cyan-400" /> 7-Day Free Trial
+                <Check className="w-3.5 h-3.5 text-cyan-400" /> Instant Activation Desk
               </li>
             </ul>
           </div>
@@ -193,7 +193,7 @@ export default function OnboardingPage() {
                 <Check className="w-3.5 h-3.5 text-amber-400" /> Dedicated Webhook Support
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-3.5 h-3.5 text-amber-400" /> 7-Day Free Trial
+                <Check className="w-3.5 h-3.5 text-amber-400" /> Dedicated Concierge Desk
               </li>
             </ul>
           </div>
@@ -212,9 +212,9 @@ export default function OnboardingPage() {
         {/* Action Button & Disclaimer */}
         <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
-            <h3 className="text-base font-bold text-white">Ready to activate your 7-day free trial?</h3>
+            <h3 className="text-base font-bold text-white">Ready to activate your GrowthPilot plan?</h3>
             <p className="text-xs text-slate-400">
-              Proceed with {selectedPlan} Tier trial activation. ($0.00 today).
+              Proceed with {selectedPlan} Tier activation.
             </p>
           </div>
 
@@ -227,7 +227,7 @@ export default function OnboardingPage() {
               <span>Opening Checkout...</span>
             ) : (
               <>
-                <span>Start 7-Day Free Trial &amp; Proceed</span>
+                <span>Choose {selectedPlan} Plan &amp; Proceed</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </>
             )}

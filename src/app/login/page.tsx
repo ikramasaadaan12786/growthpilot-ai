@@ -2,22 +2,18 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
   Rocket, 
   Lock, 
   Mail, 
   ArrowRight, 
   AlertCircle, 
-  CheckCircle2, 
   Eye, 
   EyeOff, 
-  Sparkles,
   ShieldCheck
 } from 'lucide-react';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,22 +32,30 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ success: false, error: 'Server returned an invalid response' }));
 
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error || 'Invalid credentials. Please try again.');
+        setErrorMessage(data.error || 'Invalid email address or password. Please try again.');
         setIsLoading(false);
         return;
       }
 
-      // Successful login -> Redirect to dashboard or admin
-      if (data.user?.role === 'ADMIN') {
-        router.push('/admin');
-      } else {
-        router.push('/');
+      // Check for redirect query parameter (e.g. ?redirect=/leads)
+      let target = '/';
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectParam = urlParams.get('redirect');
+        if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('/login')) {
+          target = redirectParam;
+        } else if (data.user?.role === 'ADMIN') {
+          target = '/admin';
+        }
       }
+
+      // Execute full browser transition to ensure new cookie is sent to server on initial load
+      window.location.replace(target);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Network error. Please try again.');
+      setErrorMessage(err.message || 'Network error occurred. Please check your connection.');
       setIsLoading(false);
     }
   };
@@ -136,10 +140,13 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? (
-                <span>Verifying credentials...</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Verifying credentials...</span>
+                </div>
               ) : (
                 <>
                   <span>Sign In to GrowthPilot</span>
@@ -155,7 +162,7 @@ export default function LoginPage() {
               href="/register"
               className="text-indigo-400 hover:text-indigo-300 font-bold"
             >
-              Start Free 14-Day Pro Trial
+              Create Account — Get 20 Free Credits
             </Link>
           </div>
         </div>

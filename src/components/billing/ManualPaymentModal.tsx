@@ -27,27 +27,27 @@ const PLAN_PRICES: Record<string, { price: string; name: string; features: strin
   STARTER: {
     price: '$19/mo',
     name: 'Starter Plan',
-    features: ['2 Social Channels', '50 AI Posts / Month', 'Content Calendar', '7-Day Free Trial']
+    features: ['2 Social Channels', '50 AI Posts / Month', 'Content Calendar', 'Instant Activation Desk']
   },
   PRO: {
     price: '$49/mo',
     name: 'Growth Pro Plan',
-    features: ['5 Social Channels', '250 AI Posts / Month', 'Real Estate AI Engine', 'Creator Inbox', '7-Day Free Trial']
+    features: ['5 Social Channels', '250 AI Posts / Month', 'Real Estate AI Engine', 'Creator Inbox', 'Instant Activation Desk']
   },
   ADVANCED: {
     price: '$99/mo',
     name: 'Advanced Plan',
-    features: ['15 Social Channels', 'Unlimited AI Generations', 'Full Lead CRM Pipeline', '7-Day Free Trial']
+    features: ['15 Social Channels', 'Unlimited AI Generations', 'Full Lead CRM Pipeline', 'Instant Activation Desk']
   },
   AGENCY: {
     price: '$99/mo',
     name: 'Advanced Plan',
-    features: ['15 Social Channels', 'Unlimited AI Generations', 'Full Lead CRM Pipeline', '7-Day Free Trial']
+    features: ['15 Social Channels', 'Unlimited AI Generations', 'Full Lead CRM Pipeline', 'Instant Activation Desk']
   },
   BUSINESS: {
     price: '$199/mo',
     name: 'Enterprise Business',
-    features: ['Unlimited Channels', 'Team Multi-Seat', 'White-Label Reports', '7-Day Free Trial']
+    features: ['Unlimited Channels', 'Team Multi-Seat', 'White-Label Reports', 'Dedicated Concierge Desk']
   }
 };
 

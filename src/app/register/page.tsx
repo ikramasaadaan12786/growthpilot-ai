@@ -2,28 +2,26 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { 
-  Rocket, 
+  Sparkles, 
   Lock, 
   Mail, 
   User, 
-  Building2, 
   ArrowRight, 
   AlertCircle, 
   CheckCircle2, 
   Eye, 
-  EyeOff, 
-  Sparkles,
-  ShieldCheck
+  EyeOff,
+  Building2,
+  Briefcase
 } from 'lucide-react';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
+  const [industry, setIndustry] = useState('Real Estate & Growth SaaS');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -41,21 +39,21 @@ export default function RegisterPage() {
           name,
           email,
           password,
-          companyName: companyName || undefined,
-          industry: 'Real Estate & Business'
+          companyName,
+          industry
         })
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({ success: false, error: 'Server returned an invalid response' }));
 
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error || 'Registration failed. Please try again.');
+        setErrorMessage(data.error || 'Failed to create account. Please try again.');
         setIsLoading(false);
         return;
       }
 
-      // Success -> Redirect to onboarding plan selection / dashboard
-      router.push('/onboarding');
+      // Successful registration -> Navigate to dashboard with fresh session
+      window.location.replace('/');
     } catch (err: any) {
       setErrorMessage(err.message || 'Network error. Please try again.');
       setIsLoading(false);
@@ -67,7 +65,7 @@ export default function RegisterPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
         <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
           <Sparkles className="w-4 h-4 text-emerald-400" />
-          <span>14-Day Free Pro Trial Included</span>
+          <span>20 Free Bonus Credits Included</span>
         </div>
         <h2 className="text-3xl font-black text-white tracking-tight">
           Create your private workspace
@@ -101,8 +99,8 @@ export default function RegisterPage() {
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Sarah Jenkins"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                  placeholder="Sarah Connor"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                 />
               </div>
             </div>
@@ -119,30 +117,48 @@ export default function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="sarah@luxuryrealty.com"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  Company Name
+                </label>
+                <div className="relative">
+                  <Building2 className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Prime Realty"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1.5">
+                  Industry Focus
+                </label>
+                <div className="relative">
+                  <Briefcase className="w-4 h-4 text-slate-500 absolute left-3 top-3.5" />
+                  <input
+                    type="text"
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    placeholder="Real Estate"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
+                  />
+                </div>
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                Company / Agency Name <span className="text-slate-500 font-normal">(Optional)</span>
-              </label>
-              <div className="relative">
-                <Building2 className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="text"
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  placeholder="Apex Real Estate Global"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
-                Password <span className="text-slate-500 font-normal">(Min. 8 characters)</span>
+                Create Password (min. 8 characters)
               </label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
@@ -153,7 +169,7 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all font-mono"
                 />
                 <button
                   type="button"
@@ -168,13 +184,16 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50"
+              className="w-full py-3 px-4 bg-gradient-to-r from-emerald-600 to-cyan-600 hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 cursor-pointer"
             >
               {isLoading ? (
-                <span>Creating workspace...</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Creating workspace...</span>
+                </div>
               ) : (
                 <>
-                  <span>Create Workspace &amp; Start Trial</span>
+                  <span>Create Account — Get 20 Free Credits</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -195,7 +214,7 @@ export default function RegisterPage() {
         {/* Security / No Card Badge */}
         <div className="mt-6 flex items-center justify-center gap-2 text-[11px] text-slate-500">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>No credit card required for 14-day trial • Multi-tenant data isolation</span>
+          <span>No credit card required • Instant 20 Bonus Credits • Multi-tenant data isolation</span>
         </div>
       </div>
     </div>

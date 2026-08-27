@@ -296,7 +296,7 @@ export default function SettingsPage() {
               <CreditCard className="w-5 h-5 text-indigo-400" />
               <span>Subscription Plans &amp; Client Accounts</span>
             </h3>
-            <p className="text-xs text-slate-400">All plans include full platform integrations, AI generation, and a 7-day free trial.</p>
+            <p className="text-xs text-slate-400">All plans include full platform integrations, AI generation, and instant activation.</p>
           </div>
           <div className="text-xs text-slate-400 flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -312,7 +312,7 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-extrabold uppercase text-slate-400">STARTER</span>
-                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">7-Day Trial</span>
+                <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-bold">Standard</span>
               </div>
               <div className="text-2xl font-black text-white font-mono mb-3">$19 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
               
@@ -367,7 +367,7 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-extrabold uppercase text-cyan-400">ADVANCED</span>
-                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-bold">7-Day Trial</span>
+                <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full font-bold">Scale</span>
               </div>
               <div className="text-2xl font-black text-white font-mono mb-3">$99 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
               
@@ -394,7 +394,7 @@ export default function SettingsPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-extrabold uppercase text-amber-400">BUSINESS</span>
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">7-Day Trial</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-bold">Enterprise</span>
               </div>
               <div className="text-2xl font-black text-white font-mono mb-3">$199 <span className="text-xs text-slate-500 font-normal">/mo</span></div>
               

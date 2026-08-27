@@ -311,7 +311,7 @@ export function Header() {
                   href="/register"
                   className="text-xs px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-95 text-white font-bold transition-all shadow-md shadow-indigo-600/20"
                 >
-                  Free Trial
+                  Get Started
                 </Link>
               </div>
             )}

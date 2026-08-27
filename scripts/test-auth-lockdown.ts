@@ -9,13 +9,18 @@
  * 5. Logout session termination & cookie eviction
  * 6. Cryptographic OAuth state binding and CSRF/replay defense
  * 7. Anti-caching headers on all authenticated boundaries
+ * 8. Login lifecycle (valid login, invalid login rejection, loading safety)
+ * 9. Accurate 20 signup credits & removal of stale trial copy
  */
 
 import { NextRequest } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 import { middleware } from '../src/middleware';
-import { createSessionToken, hashPassword } from '../src/lib/auth-crypto';
+import { createSessionToken } from '../src/lib/auth-crypto';
 import { GET as sessionGet } from '../src/app/api/auth/session/route';
 import { POST as logoutPost } from '../src/app/api/auth/logout/route';
+import { POST as loginPost } from '../src/app/api/auth/login/route';
 import { GET as oauthAuthorizeGet } from '../src/app/api/auth/oauth/[platform]/authorize/route';
 import { GET as socialAccountsGet } from '../src/app/api/social/accounts/route';
 import { POST as socialPublishPost } from '../src/app/api/social/publish/route';
@@ -165,7 +170,6 @@ async function runAuthLockdownQA() {
 
   // --- SECTION 5: LOGOUT TERMINATION & ANTI-CACHING HEADERS ---
   console.log('\n--> Section 5: Logout Session Invalidation & Cache Eviction');
-  const logoutReq = createMockRequest('http://localhost:3000/api/auth/logout', { method: 'POST' });
   const logoutRes = await logoutPost();
   const logoutData = await logoutRes.json();
   const cookiesCleared = logoutRes.cookies.get('gp_session')?.value === '';
@@ -187,6 +191,37 @@ async function runAuthLockdownQA() {
   const authMwRes = await middleware(authReq);
   assert(authMwRes.status === 200, 'Authenticated User Allowed into /content-studio');
   assert(authMwRes.headers.get('cache-control')?.includes('no-store') || false, 'Anti-Caching Headers Enforced on Protected Routes');
+
+  // --- SECTION 7: LOGIN LIFECYCLE & CREDENTIAL VERIFICATION ---
+  console.log('\n--> Section 7: Login Lifecycle & Credential Verification');
+  
+  // Missing Credentials
+  const emptyLoginReq = createMockRequest('http://localhost:3000/api/auth/login', {
+    method: 'POST',
+    body: { email: '', password: '' }
+  });
+  const emptyLoginRes = await loginPost(emptyLoginReq);
+  assert(emptyLoginRes.status === 400, 'Missing email/password returns 400 Bad Request');
+
+  // Invalid Credentials
+  const invalidLoginReq = createMockRequest('http://localhost:3000/api/auth/login', {
+    method: 'POST',
+    body: { email: 'nonexistent_user_9999@test.com', password: 'wrong_password' }
+  });
+  const invalidLoginRes = await loginPost(invalidLoginReq);
+  assert(invalidLoginRes.status === 401, 'Invalid credentials return 401 Unauthorized');
+
+  // --- SECTION 8: STALE TRIAL COPY REMOVAL AUDIT ---
+  console.log('\n--> Section 8: Stale Trial Copy Audit');
+  const loginSource = fs.readFileSync(path.join(__dirname, '../src/app/login/page.tsx'), 'utf-8');
+  const registerSource = fs.readFileSync(path.join(__dirname, '../src/app/register/page.tsx'), 'utf-8');
+  const headerSource = fs.readFileSync(path.join(__dirname, '../src/components/layout/Header.tsx'), 'utf-8');
+
+  assert(!loginSource.includes('14-Day Pro Trial'), 'Login Page: "14-Day Pro Trial" removed');
+  assert(loginSource.includes('Create Account — Get 20 Free Credits'), 'Login Page: Shows accurate 20 bonus credits CTA');
+  assert(!registerSource.includes('14-Day Free Pro Trial Included'), 'Register Page: "14-Day Free Pro Trial" removed');
+  assert(registerSource.includes('20 Free Bonus Credits Included'), 'Register Page: Shows accurate 20 bonus credits banner');
+  assert(!headerSource.includes('Free Trial'), 'Header: Top-Right "Free Trial" CTA replaced with "Get Started"');
 
   console.log('\n========================================================================');
   console.log(`  QA RESULTS: ${passedTests}/${totalTests} TESTS PASSED`);
