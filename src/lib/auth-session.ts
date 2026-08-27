@@ -14,6 +14,7 @@ export interface AuthenticatedUser {
     plan: string;
     status: string;
     currentPeriodEnd: Date;
+    paymentMode?: string;
   } | null;
 }
 
@@ -50,6 +51,12 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           const { getUserCredits } = await import('@/lib/credits');
           const credits = await getUserCredits(dbUser.id);
 
+          let subStatus = dbUser.subscription?.status || 'ACTIVE';
+          const isExpired = dbUser.subscription ? new Date(dbUser.subscription.currentPeriodEnd) < new Date() : false;
+          if (isExpired && (subStatus === 'ACTIVE' || subStatus === 'TRIAL' || subStatus === 'TRIALING')) {
+            subStatus = 'EXPIRED';
+          }
+
           return {
             user: {
               id: dbUser.id,
@@ -61,8 +68,9 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
               credits,
               subscription: dbUser.subscription ? {
                 plan: dbUser.subscription.plan,
-                status: dbUser.subscription.status,
-                currentPeriodEnd: dbUser.subscription.currentPeriodEnd
+                status: subStatus,
+                currentPeriodEnd: dbUser.subscription.currentPeriodEnd,
+                paymentMode: dbUser.subscription.paddleSubscriptionId ? 'PADDLE' : 'MANUAL'
               } : null
             }
           };

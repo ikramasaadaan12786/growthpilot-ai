@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-session';
 import { createPaddleCheckoutTransaction, PADDLE_PLANS } from '@/lib/paddle';
+import { getPaymentProviderConfig } from '@/lib/billing-provider';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +21,21 @@ export async function POST(req: NextRequest) {
     }
 
     const plan = rawPlan as 'STARTER' | 'PRO' | 'ADVANCED' | 'BUSINESS';
+    const config = getPaymentProviderConfig();
+
+    // MANUAL PAYMENT LAUNCH MODE: Automated gateway is gracefully deferred
+    if (config.mode === 'MANUAL' || config.mode === 'PADDLE_DISABLED') {
+      return NextResponse.json({
+        success: true,
+        mode: 'MANUAL_PAYMENT_REQUIRED',
+        provider: 'manual',
+        plan,
+        message: 'Online payment is currently being upgraded. Please contact your account agent to complete the payment manually.',
+        contactAgent: true
+      });
+    }
+
+    // Automated gateway execution (reserved for future activation)
     const origin = req.headers.get('origin') || 'https://growthpilot-ai-two.vercel.app';
     const successUrl = `${origin}/settings?billing=success&provider=paddle&plan=${plan}`;
     const cancelUrl = `${origin}/settings?billing=cancelled`;
@@ -39,6 +55,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      mode: 'AUTOMATED',
       provider: 'paddle',
       paddleEnv: checkout.paddleEnv,
       url: checkout.url,
@@ -54,7 +71,12 @@ export async function POST(req: NextRequest) {
       isSimulated: checkout.isSimulated
     });
   } catch (error: any) {
-    console.error('Paddle Checkout error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('Checkout routing error:', error);
+    return NextResponse.json({ 
+      success: true, 
+      mode: 'MANUAL_PAYMENT_REQUIRED', 
+      provider: 'manual',
+      message: 'Please contact your account agent to activate your subscription.' 
+    });
   }
 }
