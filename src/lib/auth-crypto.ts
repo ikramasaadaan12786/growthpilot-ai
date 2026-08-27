@@ -32,6 +32,8 @@ export function createSessionToken(payload: {
   name: string;
   role: string;
   plan?: string;
+  approvalStatus?: string;
+  trialStatus?: string;
 }): string {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const exp = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days
@@ -54,6 +56,8 @@ export function verifySessionToken(token: string): {
   name: string;
   role: string;
   plan?: string;
+  approvalStatus?: string;
+  trialStatus?: string;
 } | null {
   try {
     if (!token || typeof token !== 'string') return null;
@@ -72,7 +76,7 @@ export function verifySessionToken(token: string): {
 
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf-8'));
     if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) {
-      return null; // Expired
+      return null;
     }
 
     return {
@@ -80,7 +84,9 @@ export function verifySessionToken(token: string): {
       email: payload.email,
       name: payload.name,
       role: payload.role || 'USER',
-      plan: payload.plan || 'FREE'
+      plan: payload.plan || 'PRO',
+      approvalStatus: payload.approvalStatus || 'APPROVED',
+      trialStatus: payload.trialStatus || 'ACTIVE'
     };
   } catch {
     return null;

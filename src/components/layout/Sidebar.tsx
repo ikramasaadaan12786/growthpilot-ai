@@ -29,7 +29,20 @@ import { useApp } from '@/lib/store';
 export function Sidebar() {
   const pathname = usePathname();
   const { autoGrowthMode, socialAccounts } = useApp() as any;
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      const cachedRole = localStorage.getItem('growthpilot_cached_role');
+      const cachedEmail = localStorage.getItem('growthpilot_cached_email');
+      if (cachedRole) {
+        return {
+          role: cachedRole,
+          email: cachedEmail,
+          isMasterAdmin: cachedRole === 'MASTER_ADMIN' || cachedRole === 'ADMIN'
+        };
+      }
+    }
+    return null;
+  });
   const [pendingCount, setPendingCount] = useState<number>(0);
 
   useEffect(() => {
@@ -38,6 +51,11 @@ export function Sidebar() {
       .then(data => {
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
+          try {
+            localStorage.setItem('growthpilot_cached_role', data.user.role || 'USER');
+            localStorage.setItem('growthpilot_cached_email', data.user.email || '');
+          } catch {}
+
           if (data.user.isMasterAdmin || data.user.role === 'ADMIN' || data.user.role === 'MASTER_ADMIN') {
             fetch('/api/admin/users?status=PENDING', { cache: 'no-store' })
               .then(r => r.json())
@@ -60,8 +78,8 @@ export function Sidebar() {
   const isMasterAdmin = currentUser?.isMasterAdmin || 
                         currentUser?.role === 'MASTER_ADMIN' || 
                         currentUser?.role === 'ADMIN' ||
-                        currentUser?.email === 'team@growthpilot.ai' ||
-                        currentUser?.email === 'admin@growthpilot.ai';
+                        pathname === '/admin' ||
+                        pathname.startsWith('/admin/');
 
   const baseNavItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, badge: null },
@@ -110,13 +128,13 @@ export function Sidebar() {
 
       {/* Dedicated Prominent Master Admin Center Access (Visible for Master Admin only) */}
       {isMasterAdmin && (
-        <div className="p-3 border-b border-indigo-500/20 bg-indigo-950/30">
+        <div className="p-3 border-b border-indigo-500/30 bg-gradient-to-r from-indigo-950/60 via-slate-900 to-indigo-950/60">
           <Link
             href="/admin"
             className={`flex items-center justify-between p-2.5 rounded-xl border transition-all group ${
               pathname === '/admin' || pathname.startsWith('/admin/')
-                ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30'
-                : 'bg-slate-950/80 border-indigo-500/40 text-indigo-200 hover:bg-indigo-900/40 hover:border-indigo-400'
+                ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/40 ring-1 ring-indigo-400/50'
+                : 'bg-slate-950/90 border-indigo-500/40 text-indigo-200 hover:bg-indigo-900/50 hover:border-indigo-400'
             }`}
           >
             <div className="flex items-center gap-2.5">

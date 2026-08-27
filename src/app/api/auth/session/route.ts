@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-session';
+import { createSessionToken } from '@/lib/auth-crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         authenticated: true,
         user
@@ -36,6 +37,31 @@ export async function GET(req: NextRequest) {
         }
       }
     );
+
+    // Refresh session cookie with up-to-date role and privileges
+    try {
+      const refreshedToken = createSessionToken({
+        userId: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        plan: user.subscription?.plan || 'PRO',
+        approvalStatus: user.approvalStatus,
+        trialStatus: user.trialStatus
+      });
+
+      response.cookies.set('gp_session', refreshedToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 7 * 24 * 60 * 60
+      });
+    } catch {
+      // Non-fatal
+    }
+
+    return response;
   } catch (error: any) {
     return NextResponse.json(
       {

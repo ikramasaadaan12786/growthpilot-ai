@@ -5,7 +5,8 @@ let schemaPromise: Promise<void> | null = null;
 
 /**
  * Ensures all required production database columns exist using safe,
- * idempotent ALTER TABLE ... ADD COLUMN IF NOT EXISTS statements.
+ * idempotent ALTER TABLE ... ADD COLUMN IF NOT EXISTS statements and
+ * verifies that the primary owner account has the MASTER_ADMIN role.
  */
 export async function ensureDatabaseSchema(): Promise<void> {
   if (isSchemaEnsured) return;
@@ -51,8 +52,8 @@ export async function ensureDatabaseSchema(): Promise<void> {
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paymentReference" TEXT;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paymentNotes" TEXT;`,
-        // Backfill existing owner / admin accounts to MASTER_ADMIN and APPROVED
-        `UPDATE "users" SET "role" = 'MASTER_ADMIN', "approvalStatus" = 'APPROVED' WHERE "email" IN ('team@growthpilot.ai', 'admin@growthpilot.ai') OR "role" = 'ADMIN';`,
+        // Backfill existing ADMIN to MASTER_ADMIN and APPROVED
+        `UPDATE "users" SET "role" = 'MASTER_ADMIN', "approvalStatus" = 'APPROVED' WHERE "role" = 'ADMIN';`,
         // Backfill existing users without approvalStatus to APPROVED to prevent lockout
         `UPDATE "users" SET "approvalStatus" = 'APPROVED' WHERE "approvalStatus" IS NULL;`
       ];
@@ -61,9 +62,34 @@ export async function ensureDatabaseSchema(): Promise<void> {
         try {
           await prisma.$executeRawUnsafe(query);
         } catch (e: any) {
-          // Table might not exist yet or minor syntax notice
-          console.warn('[DB Sync Notice]:', e.message);
+          // Non-fatal notice
         }
+      }
+
+      // Check if any MASTER_ADMIN exists in PostgreSQL. If none, promote the earliest user (the owner)
+      try {
+        const masterAdmin = await prisma.user.findFirst({
+          where: { role: 'MASTER_ADMIN' }
+        });
+
+        if (!masterAdmin) {
+          const earliestUser = await prisma.user.findFirst({
+            orderBy: { createdAt: 'asc' }
+          });
+
+          if (earliestUser) {
+            await prisma.user.update({
+              where: { id: earliestUser.id },
+              data: {
+                role: 'MASTER_ADMIN',
+                approvalStatus: 'APPROVED'
+              }
+            });
+            console.log('[DB Sync]: Earliest user assigned MASTER_ADMIN role.');
+          }
+        }
+      } catch (roleErr: any) {
+        // Table or connection notice
       }
 
       isSchemaEnsured = true;

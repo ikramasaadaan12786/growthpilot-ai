@@ -45,16 +45,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         }
 
         const user = data.user;
-        const isMasterAdmin = user?.isMasterAdmin || user?.role === 'MASTER_ADMIN' || user?.role === 'ADMIN' || user?.email === 'team@growthpilot.ai' || user?.email === 'admin@growthpilot.ai';
+        const isMasterAdmin = user?.isMasterAdmin || user?.role === 'MASTER_ADMIN' || user?.role === 'ADMIN';
 
         // Master admin has unconditional access to all areas
         if (isMasterAdmin) {
-          return;
-        }
-
-        // Prevent normal users from viewing /admin
-        if (pathname === '/admin' || pathname?.startsWith('/admin/')) {
-          window.location.replace('/');
           return;
         }
 
@@ -64,8 +58,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // If trial expired / payment required on protected page
-        if (!isPublic && user?.entitlement && !user.entitlement.allowed) {
+        // If trial expired / payment required on protected page (excluding /admin which has its own RBAC UI)
+        if (!isPublic && pathname !== '/admin' && !pathname.startsWith('/admin/') && user?.entitlement && !user.entitlement.allowed) {
           const target = user.entitlement.redirectTo || '/payment-required';
           if (pathname !== target) {
             window.location.replace(target);

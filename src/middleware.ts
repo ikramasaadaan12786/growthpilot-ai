@@ -166,32 +166,23 @@ export async function middleware(req: NextRequest) {
     return response;
   }
 
-  // 7. Handle MASTER_ADMIN / ADMIN privilege validation
-  const isMasterAdmin = session.role === 'MASTER_ADMIN' || session.role === 'ADMIN' || session.email === 'team@growthpilot.ai' || session.email === 'admin@growthpilot.ai';
-  const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
-  const isAdminApi = pathname.startsWith('/api/admin/');
-
-  if (isAdminRoute || isAdminApi) {
+  // 7. Handle /api/admin/ endpoints security
+  if (pathname.startsWith('/api/admin/')) {
+    const isMasterAdmin = session.role === 'MASTER_ADMIN' || session.role === 'ADMIN';
     if (!isMasterAdmin) {
-      if (isAdminApi) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Access denied: Administrator privileges required.',
-            code: 'FORBIDDEN'
-          },
-          {
-            status: 403,
-            headers: {
-              'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
-            }
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Access denied: Administrator privileges required.',
+          code: 'FORBIDDEN'
+        },
+        {
+          status: 403,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate'
           }
-        );
-      }
-      const homeUrl = new URL('/', req.url);
-      const res = NextResponse.redirect(homeUrl);
-      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-      return res;
+        }
+      );
     }
   }
 
