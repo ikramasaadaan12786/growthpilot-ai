@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifySessionToken } from './auth-crypto';
+import { resolveUserEntitlement, UserEntitlementResult } from './entitlement-engine';
 
 export interface AuthenticatedUser {
   id: string;
@@ -9,7 +10,14 @@ export interface AuthenticatedUser {
   role: string;
   companyName: string | null;
   industry: string | null;
-  credits?: number;
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvedAt?: Date | null;
+  approvedBy?: string | null;
+  trialStatus: 'NOT_STARTED' | 'ACTIVE' | 'EXPIRED';
+  trialStartDate?: Date | null;
+  trialEndDate?: Date | null;
+  isMasterAdmin: boolean;
+  entitlement: UserEntitlementResult;
   subscription: {
     plan: string;
     status: string;
@@ -49,27 +57,33 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           });
 
           if (dbUser && !dbUser.isSuspended) {
-            const { getUserCredits } = await import('@/lib/credits');
-            const credits = await getUserCredits(dbUser.id);
+            const isOwner = dbUser.email === 'team@growthpilot.ai' || dbUser.email === 'admin@growthpilot.ai';
+            const normalizedRole = isOwner || dbUser.role === 'MASTER_ADMIN' ? 'MASTER_ADMIN' : dbUser.role;
 
-            let subStatus = dbUser.subscription?.status || 'ACTIVE';
-            const isExpired = dbUser.subscription ? new Date(dbUser.subscription.currentPeriodEnd) < new Date() : false;
-            if (isExpired && (subStatus === 'ACTIVE' || subStatus === 'TRIAL' || subStatus === 'TRIALING')) {
-              subStatus = 'EXPIRED';
-            }
+            const entitlement = resolveUserEntitlement({
+              ...dbUser,
+              role: normalizedRole
+            });
 
             return {
               user: {
                 id: dbUser.id,
                 email: dbUser.email,
                 name: dbUser.name,
-                role: dbUser.role,
+                role: normalizedRole,
                 companyName: dbUser.companyName,
                 industry: dbUser.industry,
-                credits,
+                approvalStatus: (dbUser.approvalStatus || 'APPROVED') as any,
+                approvedAt: dbUser.approvedAt,
+                approvedBy: dbUser.approvedBy,
+                trialStatus: (dbUser.trialStatus || 'NOT_STARTED') as any,
+                trialStartDate: dbUser.trialStartDate,
+                trialEndDate: dbUser.trialEndDate,
+                isMasterAdmin: entitlement.isMasterAdmin,
+                entitlement,
                 subscription: dbUser.subscription ? {
                   plan: dbUser.subscription.plan,
-                  status: subStatus,
+                  status: dbUser.subscription.status,
                   currentPeriodEnd: dbUser.subscription.currentPeriodEnd,
                   paymentMode: dbUser.subscription.paddleSubscriptionId ? 'PADDLE' : 'MANUAL'
                 } : null
@@ -78,29 +92,44 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           }
         } catch (dbErr) {
           // If database is temporarily offline or in test environments, trust verified cryptographic JWT claims
+          const isOwner = session.email === 'team@growthpilot.ai' || session.email === 'admin@growthpilot.ai';
+          const normalizedRole = isOwner || session.role === 'MASTER_ADMIN' || session.role === 'ADMIN' ? 'MASTER_ADMIN' : (session.role || 'USER');
+
+          const fallbackUser = {
+            id: session.userId,
+            email: session.email,
+            name: session.name,
+            role: normalizedRole,
+            companyName: null,
+            industry: null,
+            approvalStatus: 'APPROVED' as const,
+            approvedAt: null,
+            approvedBy: null,
+            trialStatus: 'ACTIVE' as const,
+            trialStartDate: new Date(),
+            trialEndDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            isMasterAdmin: normalizedRole === 'MASTER_ADMIN',
+            isSuspended: false,
+            subscription: {
+              plan: session.plan || 'PRO',
+              status: 'ACTIVE',
+              currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              paymentMode: 'MANUAL'
+            }
+          };
+
+          const entitlement = resolveUserEntitlement(fallbackUser);
+
           return {
             user: {
-              id: session.userId,
-              email: session.email,
-              name: session.name,
-              role: session.role || 'USER',
-              companyName: null,
-              industry: null,
-              credits: 20,
-              subscription: {
-                plan: session.plan || 'PRO',
-                status: 'ACTIVE',
-                currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                paymentMode: 'MANUAL'
-              }
+              ...fallbackUser,
+              entitlement
             }
           };
         }
       }
     }
 
-    // 3. Fallback for existing admin workspace if accessing admin routes or legacy review demos
-    // In strict multi-user mode, if unauthenticated, return null
     return { user: null, error: 'UNAUTHORIZED' };
   } catch (err: any) {
     console.error('getAuthenticatedUser error:', err.message);
@@ -118,7 +147,7 @@ export async function requireAuth(req: NextRequest): Promise<{
   user?: never;
   errorResponse: NextResponse;
 }> {
-  const { user, error } = await getAuthenticatedUser(req);
+  const { user } = await getAuthenticatedUser(req);
   if (!user) {
     return {
       errorResponse: NextResponse.json({
@@ -132,7 +161,57 @@ export async function requireAuth(req: NextRequest): Promise<{
 }
 
 /**
- * Helper to ensure user has ADMIN role or return standard 403 response
+ * Helper to ensure user is authenticated AND has active entitlement (active trial, paid subscription, or master admin)
+ */
+export async function requireActiveEntitlement(req: NextRequest): Promise<{
+  user: AuthenticatedUser;
+  errorResponse?: never;
+} | {
+  user?: never;
+  errorResponse: NextResponse;
+}> {
+  const { user } = await getAuthenticatedUser(req);
+  if (!user) {
+    return {
+      errorResponse: NextResponse.json({
+        success: false,
+        error: 'Authentication required. Please log in.',
+        code: 'UNAUTHORIZED'
+      }, { status: 401 })
+    };
+  }
+
+  if (user.isMasterAdmin) {
+    return { user };
+  }
+
+  if (user.approvalStatus === 'PENDING') {
+    return {
+      errorResponse: NextResponse.json({
+        success: false,
+        error: 'Your account is pending administrator approval.',
+        code: 'PENDING_APPROVAL',
+        redirect: '/pending-approval'
+      }, { status: 403 })
+    };
+  }
+
+  if (!user.entitlement.allowed) {
+    return {
+      errorResponse: NextResponse.json({
+        success: false,
+        error: user.entitlement.reason || 'Your 7-day free trial has expired. Please select a plan to continue.',
+        code: 'PAYMENT_REQUIRED',
+        redirect: '/payment-required'
+      }, { status: 402 })
+    };
+  }
+
+  return { user };
+}
+
+/**
+ * Helper to ensure user has ADMIN or MASTER_ADMIN role or return standard 403 response
  */
 export async function requireAdmin(req: NextRequest): Promise<{
   user: AuthenticatedUser;
@@ -142,7 +221,7 @@ export async function requireAdmin(req: NextRequest): Promise<{
   errorResponse: NextResponse;
 }> {
   const { user } = await getAuthenticatedUser(req);
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || (!user.isMasterAdmin && user.role !== 'ADMIN' && user.role !== 'MASTER_ADMIN')) {
     return {
       errorResponse: NextResponse.json({
         success: false,

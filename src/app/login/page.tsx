@@ -10,7 +10,8 @@ import {
   AlertCircle, 
   Eye, 
   EyeOff, 
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -40,6 +41,11 @@ export default function LoginPage() {
         return;
       }
 
+      if (data.redirect) {
+        window.location.replace(data.redirect);
+        return;
+      }
+
       // Check for redirect query parameter (e.g. ?redirect=/leads)
       let target = '/';
       if (typeof window !== 'undefined') {
@@ -47,7 +53,7 @@ export default function LoginPage() {
         const redirectParam = urlParams.get('redirect');
         if (redirectParam && redirectParam.startsWith('/') && !redirectParam.startsWith('/login')) {
           target = redirectParam;
-        } else if (data.user?.role === 'ADMIN') {
+        } else if (data.user?.role === 'ADMIN' || data.user?.role === 'MASTER_ADMIN' || data.user?.isMasterAdmin) {
           target = '/admin';
         }
       }
@@ -162,7 +168,7 @@ export default function LoginPage() {
               href="/register"
               className="text-indigo-400 hover:text-indigo-300 font-bold"
             >
-              Create Account — Get 20 Free Credits
+              Start 7-Day Free Trial
             </Link>
           </div>
         </div>

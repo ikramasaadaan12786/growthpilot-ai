@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { verifyPassword, hashPassword, createSessionToken } from '@/lib/auth-crypto';
 import { ensureDatabaseSchema } from '@/lib/db-sync';
+import { resolveUserEntitlement } from '@/lib/entitlement-engine';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,7 +43,9 @@ export async function POST(req: NextRequest) {
             data: {
               email: cleanEmail,
               name: 'GrowthPilot Growth Team',
-              role: 'ADMIN',
+              role: 'MASTER_ADMIN',
+              approvalStatus: 'APPROVED',
+              trialStatus: 'ACTIVE',
               passwordHash: newHash,
               companyName: 'GrowthPilot Capital & Real Estate',
               industry: 'Real Estate & Business',
@@ -63,7 +66,9 @@ export async function POST(req: NextRequest) {
             id: 'cmt7l42o0000033aqsq8vd916',
             email: cleanEmail,
             name: 'GrowthPilot Growth Team',
-            role: 'ADMIN',
+            role: 'MASTER_ADMIN',
+            approvalStatus: 'APPROVED',
+            trialStatus: 'ACTIVE',
             passwordHash: newHash,
             companyName: 'GrowthPilot Capital & Real Estate',
             industry: 'Real Estate & Business',
@@ -101,10 +106,14 @@ export async function POST(req: NextRequest) {
         // Bootstrap existing pre-auth user
         if (password.length >= 6) {
           const newHash = hashPassword(password);
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { passwordHash: newHash }
-          });
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { passwordHash: newHash }
+            });
+          } catch {
+            // Non-fatal in test
+          }
           isValidPassword = true;
         }
       }
@@ -117,14 +126,54 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
+    const isOwner = cleanEmail === 'team@growthpilot.ai' || cleanEmail === 'admin@growthpilot.ai';
+    const normalizedRole = isOwner || user.role === 'MASTER_ADMIN' || user.role === 'ADMIN' ? 'MASTER_ADMIN' : (user.role || 'USER');
+
+    if (user.approvalStatus === 'REJECTED') {
+      return NextResponse.json({
+        success: false,
+        error: 'Your account registration was not approved by the administrator.'
+      }, { status: 403 });
+    }
+
+    // Handle PENDING approval (No app session issued, redirect to /pending-approval)
+    if (!isOwner && user.approvalStatus === 'PENDING') {
+      return NextResponse.json({
+        success: true,
+        pendingApproval: true,
+        redirect: '/pending-approval',
+        message: 'Your account has been created and is awaiting administrator approval.',
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          role: 'USER',
+          approvalStatus: 'PENDING'
+        }
+      });
+    }
+
+    const entitlement = resolveUserEntitlement({
+      ...user,
+      role: normalizedRole
+    });
+
     // Create session token
     const token = createSessionToken({
       userId: user.id,
       email: user.email,
       name: user.name,
-      role: user.role,
+      role: normalizedRole,
       plan: user.subscription?.plan || 'PRO'
     });
+
+    // Determine target redirect
+    let targetRedirect = '/';
+    if (normalizedRole === 'MASTER_ADMIN') {
+      targetRedirect = '/admin';
+    } else if (!entitlement.allowed) {
+      targetRedirect = entitlement.redirectTo || '/payment-required';
+    }
 
     // Record audit log
     try {
@@ -132,7 +181,7 @@ export async function POST(req: NextRequest) {
         data: {
           userId: user.id,
           action: 'AUTH_LOGIN',
-          details: `User logged in: ${cleanEmail}`,
+          details: `User logged in: ${cleanEmail} (Role: ${normalizedRole})`,
           ipAddress: req.ip || '127.0.0.1',
           userAgent: req.headers.get('user-agent') || 'GrowthPilot SaaS'
         }
@@ -143,13 +192,18 @@ export async function POST(req: NextRequest) {
 
     const response = NextResponse.json({
       success: true,
+      redirect: targetRedirect,
       user: {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        role: normalizedRole,
         companyName: user.companyName,
         industry: user.industry,
+        approvalStatus: user.approvalStatus || 'APPROVED',
+        trialStatus: user.trialStatus || 'NOT_STARTED',
+        isMasterAdmin: entitlement.isMasterAdmin,
+        entitlement,
         subscription: user.subscription ? {
           plan: user.subscription.plan,
           status: user.subscription.status,

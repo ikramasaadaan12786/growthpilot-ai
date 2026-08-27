@@ -16,13 +16,19 @@ model User {
   name              String
   passwordHash      String?
   avatar            String?
-  role              String             @default("USER") // USER, AGENCY, ADMIN
+  role              String             @default("USER") // USER, ADMIN, MASTER_ADMIN
   companyName       String?
   industry          String?            @default("Real Estate & Business")
   emailVerified     Boolean            @default(false)
   verificationToken String?
   resetToken        String?
   resetTokenExpires DateTime?
+  approvalStatus    String             @default("APPROVED") // PENDING, APPROVED, REJECTED
+  approvedAt        DateTime?
+  approvedBy        String?
+  trialStatus       String             @default("NOT_STARTED") // NOT_STARTED, ACTIVE, EXPIRED
+  trialStartDate    DateTime?
+  trialEndDate      DateTime?
   isSuspended       Boolean            @default(false)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -49,14 +55,17 @@ model Subscription {
   id                   String    @id @default(cuid())
   userId               String    @unique
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                 String    @default("PRO") // FREE, PRO, AGENCY
-  status               String    @default("ACTIVE") // ACTIVE, TRIALING, PAST_DUE, CANCELED
+  plan                 String    @default("PRO") // STARTER, PRO, ADVANCED, BUSINESS, FREE
+  status               String    @default("ACTIVE") // ACTIVE, TRIALING, PAST_DUE, CANCELED, EXPIRED
   stripeCustomerId     String?
   stripeSubscriptionId String?
   stripePriceId        String?
   paddleCustomerId     String?
   paddleSubscriptionId String?
   paddlePriceId        String?
+  paymentMethod        String?   // MANUAL_TRANSFER, CRYPTO, DIRECT_INVOICE, STRIPE, PADDLE
+  paymentReference     String?
+  paymentNotes         String?
   currentPeriodStart   DateTime  @default(now())
   currentPeriodEnd     DateTime
   cancelAtPeriodEnd    Boolean   @default(false)

@@ -211,16 +211,16 @@ async function runAuthLockdownQA() {
   const invalidLoginRes = await loginPost(invalidLoginReq);
   assert(invalidLoginRes.status === 401, 'Invalid credentials return 401 Unauthorized');
 
-  // --- SECTION 8: STALE TRIAL COPY REMOVAL AUDIT ---
-  console.log('\n--> Section 8: Stale Trial Copy Audit');
+  // --- SECTION 8: LAUNCH COPY AUDIT (7-DAY TRIAL & CREDITS REMOVED) ---
+  console.log('\n--> Section 8: Launch Copy Audit (7-Day Trial & Credits Abolished)');
   const loginSource = fs.readFileSync(path.join(__dirname, '../src/app/login/page.tsx'), 'utf-8');
   const registerSource = fs.readFileSync(path.join(__dirname, '../src/app/register/page.tsx'), 'utf-8');
   const headerSource = fs.readFileSync(path.join(__dirname, '../src/components/layout/Header.tsx'), 'utf-8');
 
   assert(!loginSource.includes('14-Day Pro Trial'), 'Login Page: "14-Day Pro Trial" removed');
-  assert(loginSource.includes('Create Account — Get 20 Free Credits'), 'Login Page: Shows accurate 20 bonus credits CTA');
+  assert(!loginSource.includes('20 Free Credits'), 'Login Page: 20 Free Credits removed');
   assert(!registerSource.includes('14-Day Free Pro Trial Included'), 'Register Page: "14-Day Free Pro Trial" removed');
-  assert(registerSource.includes('20 Free Bonus Credits Included'), 'Register Page: Shows accurate 20 bonus credits banner');
+  assert(!registerSource.includes('20 Free Bonus Credits'), 'Register Page: 20 bonus credits removed');
   assert(!headerSource.includes('Free Trial'), 'Header: Top-Right "Free Trial" CTA replaced with "Get Started"');
 
   console.log('\n========================================================================');

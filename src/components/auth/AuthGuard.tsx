@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 const PUBLIC_ROUTES = [
   '/login',
   '/register',
+  '/pending-approval',
+  '/payment-required',
   '/forgot-password',
   '/reset-password',
   '/privacy',
@@ -34,9 +36,40 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         });
         const data = await res.json();
 
-        if (!data.authenticated && !isPublic) {
-          // Logged out on a protected route -> redirect to login immediately
-          window.location.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+        if (!data.authenticated) {
+          if (!isPublic) {
+            // Logged out on a protected route -> redirect to login immediately
+            window.location.replace(`/login?redirect=${encodeURIComponent(pathname)}`);
+          }
+          return;
+        }
+
+        const user = data.user;
+        const isMasterAdmin = user?.isMasterAdmin || user?.role === 'MASTER_ADMIN' || user?.role === 'ADMIN' || user?.email === 'team@growthpilot.ai' || user?.email === 'admin@growthpilot.ai';
+
+        // Master admin has unconditional access to all areas
+        if (isMasterAdmin) {
+          return;
+        }
+
+        // Prevent normal users from viewing /admin
+        if (pathname === '/admin' || pathname?.startsWith('/admin/')) {
+          window.location.replace('/');
+          return;
+        }
+
+        // If pending approval, redirect to /pending-approval
+        if (user?.approvalStatus === 'PENDING' && pathname !== '/pending-approval') {
+          window.location.replace('/pending-approval');
+          return;
+        }
+
+        // If trial expired / payment required on protected page
+        if (!isPublic && user?.entitlement && !user.entitlement.allowed) {
+          const target = user.entitlement.redirectTo || '/payment-required';
+          if (pathname !== target) {
+            window.location.replace(target);
+          }
         }
       } catch {
         if (!isPublic) {

@@ -13,7 +13,9 @@ import {
   Eye, 
   EyeOff,
   Building2,
-  Briefcase
+  Briefcase,
+  ShieldCheck,
+  Clock
 } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -52,8 +54,8 @@ export default function RegisterPage() {
         return;
       }
 
-      // Successful registration -> Navigate to dashboard with fresh session
-      window.location.replace('/');
+      // Successful registration -> Navigate to pending approval status page
+      window.location.replace('/pending-approval');
     } catch (err: any) {
       setErrorMessage(err.message || 'Network error. Please try again.');
       setIsLoading(false);
@@ -63,15 +65,15 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-slate-200">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center space-y-3">
-        <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
           <Sparkles className="w-4 h-4 text-emerald-400" />
-          <span>20 Free Bonus Credits Included</span>
+          <span>7-Day Free Trial Available</span>
         </div>
         <h2 className="text-3xl font-black text-white tracking-tight">
           Create your private workspace
         </h2>
         <p className="text-xs text-slate-400 max-w-sm mx-auto">
-          Start accelerating your social media growth, AI video scripts, and multi-channel lead ads.
+          Create your account. Once approved by the administrator, your 7-day free trial will begin.
         </p>
       </div>
 
@@ -189,11 +191,11 @@ export default function RegisterPage() {
               {isLoading ? (
                 <div className="flex items-center gap-2">
                   <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Creating workspace...</span>
+                  <span>Submitting for approval...</span>
                 </div>
               ) : (
                 <>
-                  <span>Create Account — Get 20 Free Credits</span>
+                  <span>Create Account &amp; Request Approval</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
@@ -214,7 +216,7 @@ export default function RegisterPage() {
         {/* Security / No Card Badge */}
         <div className="mt-6 flex items-center justify-center gap-2 text-[11px] text-slate-500">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>No credit card required • Instant 20 Bonus Credits • Multi-tenant data isolation</span>
+          <span>No credit card required • 7-Day Free Trial upon Approval • Multi-tenant data isolation</span>
         </div>
       </div>
     </div>

@@ -280,13 +280,13 @@ export function Header() {
                     >
                       <Shield className="w-3.5 h-3.5 text-indigo-400" /> Account &amp; Settings
                     </Link>
-                    {currentUser.role === 'ADMIN' && (
+                    {(currentUser.role === 'ADMIN' || currentUser.role === 'MASTER_ADMIN' || currentUser.isMasterAdmin) && (
                       <Link
                         href="/admin"
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-2 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800"
                       >
-                        <Layers className="w-3.5 h-3.5 text-cyan-400" /> Admin Dashboard
+                        <Layers className="w-3.5 h-3.5 text-cyan-400" /> Admin Control Center
                       </Link>
                     )}
                     <div className="border-t border-slate-800 my-1" />

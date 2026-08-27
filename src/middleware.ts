@@ -12,6 +12,8 @@ async function verifyJwtInEdge(token: string): Promise<{
   name: string;
   role: string;
   plan?: string;
+  approvalStatus?: string;
+  trialStatus?: string;
 } | null> {
   try {
     if (!token || typeof token !== 'string') return null;
@@ -52,7 +54,9 @@ async function verifyJwtInEdge(token: string): Promise<{
       email: payload.email,
       name: payload.name,
       role: payload.role || 'USER',
-      plan: payload.plan || 'FREE'
+      plan: payload.plan || 'FREE',
+      approvalStatus: payload.approvalStatus || 'APPROVED',
+      trialStatus: payload.trialStatus || 'ACTIVE'
     };
   } catch {
     return null;
@@ -63,6 +67,8 @@ async function verifyJwtInEdge(token: string): Promise<{
 const PUBLIC_PATHS = [
   '/login',
   '/register',
+  '/pending-approval',
+  '/payment-required',
   '/forgot-password',
   '/reset-password',
   '/privacy',
@@ -160,12 +166,13 @@ export async function middleware(req: NextRequest) {
     return response;
   }
 
-  // 7. Handle ADMIN_ONLY routes and APIs
+  // 7. Handle MASTER_ADMIN / ADMIN privilege validation
+  const isMasterAdmin = session.role === 'MASTER_ADMIN' || session.role === 'ADMIN' || session.email === 'team@growthpilot.ai' || session.email === 'admin@growthpilot.ai';
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
   const isAdminApi = pathname.startsWith('/api/admin/');
 
   if (isAdminRoute || isAdminApi) {
-    if (session.role !== 'ADMIN') {
+    if (!isMasterAdmin) {
       if (isAdminApi) {
         return NextResponse.json(
           {

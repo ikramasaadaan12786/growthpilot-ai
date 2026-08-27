@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIService } from '@/lib/ai/ai-service';
 import { getAuthenticatedUser } from '@/lib/auth-session';
-import { deductCredits } from '@/lib/credits';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,30 +10,34 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { topic, goal, tone, language, audience, isDemoMode = false } = body;
 
-    // Strict authentication requirement for live generation
-    if (!user && !isDemoMode) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Authentication required. Please log in to generate content.',
-          code: 'UNAUTHORIZED'
-        },
-        { status: 401 }
-      );
-    }
-
-    // If user is authenticated, check and deduct 1 credit
-    let remainingCredits: number | undefined;
-    if (user) {
-      const deduction = await deductCredits(user.id, 1, 'AI Content Generation');
-      if (!deduction.success) {
-        return NextResponse.json({ error: deduction.error }, { status: 402 });
+    // Strict authentication & entitlement requirement for live generation
+    if (!isDemoMode) {
+      if (!user) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Authentication required. Please log in to generate content.',
+            code: 'UNAUTHORIZED'
+          },
+          { status: 401 }
+        );
       }
-      remainingCredits = deduction.remaining;
+
+      if (!user.isMasterAdmin && !user.entitlement.allowed) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: user.entitlement.reason || 'Active 7-day free trial or paid subscription required.',
+            code: 'PAYMENT_REQUIRED',
+            redirect: '/payment-required'
+          },
+          { status: 402 }
+        );
+      }
     }
 
     if (!topic) {
-      return NextResponse.json({ error: 'Topic is required' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Topic is required' }, { status: 400 });
     }
 
     const result = await AIService.generateForAllWindows({
@@ -47,11 +50,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result,
-      creditsRemaining: remainingCredits
+      data: result
     });
   } catch (error: any) {
     console.error('API /api/ai/generate error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

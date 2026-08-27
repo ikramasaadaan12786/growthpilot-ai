@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { user } = await getAuthenticatedUser(req);
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || (!user.isMasterAdmin && user.role !== 'ADMIN' && user.role !== 'MASTER_ADMIN')) {
       return NextResponse.json(
         { success: false, error: 'Access denied: Administrator privileges required.', code: 'FORBIDDEN' },
         { status: 403 }
@@ -58,6 +58,7 @@ export async function GET(req: NextRequest) {
         }
       });
     } catch (dbErr: any) {
+      // Memory fallback for mock/tests
       return NextResponse.json({
         success: true,
         stats: {
@@ -72,6 +73,7 @@ export async function GET(req: NextRequest) {
       });
     }
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('API /api/admin/stats error:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Internal Server Error' }, { status: 500 });
   }
 }

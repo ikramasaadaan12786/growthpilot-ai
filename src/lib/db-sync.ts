@@ -35,13 +35,26 @@ export async function ensureDatabaseSchema(): Promise<void> {
         `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "verificationToken" TEXT;`,
         `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "resetToken" TEXT;`,
         `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "resetTokenExpires" TIMESTAMP(3);`,
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "approvalStatus" TEXT DEFAULT 'APPROVED';`,
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP(3);`,
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "approvedBy" TEXT;`,
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "trialStatus" TEXT DEFAULT 'NOT_STARTED';`,
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "trialStartDate" TIMESTAMP(3);`,
+        `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "trialEndDate" TIMESTAMP(3);`,
         `ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "isSuspended" BOOLEAN DEFAULT false;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paddleCustomerId" TEXT;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paddleSubscriptionId" TEXT;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paddlePriceId" TEXT;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "stripeCustomerId" TEXT;`,
         `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "stripeSubscriptionId" TEXT;`,
-        `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "stripePriceId" TEXT;`
+        `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "stripePriceId" TEXT;`,
+        `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paymentMethod" TEXT;`,
+        `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paymentReference" TEXT;`,
+        `ALTER TABLE "subscriptions" ADD COLUMN IF NOT EXISTS "paymentNotes" TEXT;`,
+        // Backfill existing owner / admin accounts to MASTER_ADMIN and APPROVED
+        `UPDATE "users" SET "role" = 'MASTER_ADMIN', "approvalStatus" = 'APPROVED' WHERE "email" IN ('team@growthpilot.ai', 'admin@growthpilot.ai') OR "role" = 'ADMIN';`,
+        // Backfill existing users without approvalStatus to APPROVED to prevent lockout
+        `UPDATE "users" SET "approvalStatus" = 'APPROVED' WHERE "approvalStatus" IS NULL;`
       ];
 
       for (const query of safeMigrations) {

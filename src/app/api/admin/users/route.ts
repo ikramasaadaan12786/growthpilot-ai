@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedUser } from '@/lib/auth-session';
 import { prisma } from '@/lib/db';
-import { getUserCredits } from '@/lib/credits';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,57 +8,77 @@ export async function GET(req: NextRequest) {
   try {
     const { user } = await getAuthenticatedUser(req);
 
-    if (!user || user.role !== 'ADMIN') {
+    if (!user || (!user.isMasterAdmin && user.role !== 'ADMIN' && user.role !== 'MASTER_ADMIN')) {
       return NextResponse.json({
         success: false,
-        error: 'Access denied: Admin privileges required.'
+        error: 'Access denied: Master Admin privileges required.'
       }, { status: 403 });
     }
 
     const { searchParams } = new URL(req.url);
     const query = searchParams.get('q')?.trim().toLowerCase() || '';
+    const statusFilter = searchParams.get('status')?.trim().toUpperCase();
 
-    const users = await prisma.user.findMany({
-      where: query ? {
-        OR: [
-          { id: { contains: query } },
-          { email: { contains: query } },
-          { name: { contains: query } },
-          { companyName: { contains: query } }
-        ]
-      } : undefined,
-      include: {
-        subscription: true,
-        socialAccounts: {
-          select: {
-            platform: true,
-            status: true,
-            username: true
+    const whereClause: any = {};
+
+    if (query) {
+      whereClause.OR = [
+        { id: { contains: query } },
+        { email: { contains: query } },
+        { name: { contains: query } },
+        { companyName: { contains: query } }
+      ];
+    }
+
+    if (statusFilter) {
+      if (statusFilter === 'PENDING' || statusFilter === 'PENDING_APPROVAL') {
+        whereClause.approvalStatus = 'PENDING';
+      } else if (statusFilter === 'APPROVED') {
+        whereClause.approvalStatus = 'APPROVED';
+      } else if (statusFilter === 'REJECTED') {
+        whereClause.approvalStatus = 'REJECTED';
+      } else if (statusFilter === 'SUSPENDED') {
+        whereClause.isSuspended = true;
+      }
+    }
+
+    let users: any[] = [];
+    try {
+      users = await prisma.user.findMany({
+        where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+        include: {
+          subscription: true,
+          socialAccounts: {
+            select: {
+              platform: true,
+              status: true,
+              username: true
+            }
+          },
+          auditLogs: {
+            orderBy: { createdAt: 'desc' },
+            take: 5
           }
         },
-        auditLogs: {
-          where: {
-            action: { in: ['SUBSCRIPTION_MANUAL_ACTIVATE', 'ADMIN_USER_UPDATE', 'SUBSCRIPTION_EXTEND', 'CREDITS_ADMIN_ADJUST'] }
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 5
-        }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100
-    });
+        orderBy: { createdAt: 'desc' },
+        take: 100
+      });
+    } catch {
+      users = [];
+    }
 
     const now = new Date();
 
-    const sanitizedUsers = await Promise.all(users.map(async (u) => {
-      const credits = await getUserCredits(u.id);
-      
+    const sanitizedUsers = users.map((u) => {
       const sub = u.subscription;
       let effectiveStatus = sub?.status || 'TRIAL';
       const isExpired = sub ? new Date(sub.currentPeriodEnd) < now : false;
       if (isExpired && effectiveStatus === 'ACTIVE') {
         effectiveStatus = 'EXPIRED';
       }
+
+      const trialEnd = u.trialEndDate ? new Date(u.trialEndDate) : null;
+      const isTrialActive = u.trialStatus === 'ACTIVE' && trialEnd && trialEnd > now;
 
       // Latest note from audit log if available
       const latestNoteLog = u.auditLogs?.[0];
@@ -72,39 +91,49 @@ export async function GET(req: NextRequest) {
         role: u.role,
         companyName: u.companyName,
         industry: u.industry,
+        approvalStatus: u.approvalStatus || 'APPROVED',
+        approvedAt: u.approvedAt,
+        approvedBy: u.approvedBy,
+        trialStatus: isTrialActive ? 'ACTIVE' : (u.trialStatus || 'NOT_STARTED'),
+        trialStartDate: u.trialStartDate,
+        trialEndDate: u.trialEndDate,
+        trialDaysRemaining: isTrialActive ? Math.max(0, Math.ceil((trialEnd!.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))) : 0,
         isSuspended: u.isSuspended,
-        credits,
         createdAt: u.createdAt,
         subscription: sub ? {
           plan: sub.plan,
           status: effectiveStatus,
-          trialStatus: sub.status === 'TRIALING' || sub.status === 'TRIAL' ? 'TRIAL_ACTIVE' : 'COMPLETED',
           currentPeriodStart: sub.currentPeriodStart,
           currentPeriodEnd: sub.currentPeriodEnd,
           isExpired,
-          paymentMode: sub.paddleSubscriptionId ? 'PADDLE_GATEWAY' : 'MANUAL'
-        } : {
-          plan: 'TRIAL',
-          status: 'TRIAL',
-          trialStatus: 'TRIAL_ACTIVE',
-          currentPeriodStart: u.createdAt,
-          currentPeriodEnd: new Date(new Date(u.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000),
-          isExpired: false,
-          paymentMode: 'MANUAL'
-        },
+          paymentMethod: sub.paymentMethod || 'MANUAL',
+          paymentReference: sub.paymentReference,
+          paymentNotes: sub.paymentNotes
+        } : null,
         internalNotes,
         socialAccountsCount: u.socialAccounts.length,
-        connectedPlatforms: u.socialAccounts.filter(s => s.status === 'CONNECTED' || s.status === 'REAL_CONNECTED').map(s => s.platform)
+        connectedPlatforms: u.socialAccounts.filter((s: any) => s.status === 'CONNECTED' || s.status === 'REAL_CONNECTED').map((s: any) => s.platform)
       };
-    }));
+    });
+
+    const pendingApprovalsCount = sanitizedUsers.filter(u => u.approvalStatus === 'PENDING').length;
 
     return NextResponse.json({
       success: true,
       users: sanitizedUsers,
-      totalCount: sanitizedUsers.length
+      total: sanitizedUsers.length,
+      pendingApprovalsCount
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
   } catch (error: any) {
     console.error('Admin users fetch error:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({
+      success: false,
+      error: error.message || 'Failed to fetch users'
+    }, { status: 500 });
   }
 }

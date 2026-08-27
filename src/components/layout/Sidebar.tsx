@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -19,30 +19,65 @@ import {
   ShieldCheck, 
   Settings,
   Zap,
-  Building2
+  Building2,
+  Clock
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 
-const NAV_ITEMS = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, badge: null },
-  { href: '/social-accounts', label: 'Social Accounts', icon: Share2, badge: '4/4' },
-  { href: '/growth-score', label: 'AI Growth Score', icon: Sparkles, badge: '85' },
-  { href: '/content-studio', label: 'Content Studio', icon: PenTool, badge: 'AI' },
-  { href: '/calendar', label: 'Content Calendar', icon: CalendarDays, badge: '6' },
-  { href: '/analytics', label: 'Analytics & Growth', icon: BarChart3, badge: null },
-  { href: '/ideas', label: 'Daily Ideas & Radar', icon: Flame, badge: '10' },
-  { href: '/competitors', label: 'Competitors', icon: Radar, badge: null },
-  { href: '/campaigns', label: 'Ad Campaigns', icon: Megaphone, badge: null },
-  { href: '/leads', label: 'Lead Center', icon: Users2, badge: '24' },
-  { href: '/reports', label: 'Weekly AI Reports', icon: FileText, badge: 'New' },
-  { href: '/automation', label: 'Automation Center', icon: Bot, badge: 'Active' },
-  { href: '/admin', label: 'Admin Dashboard', icon: ShieldCheck, badge: null },
-  { href: '/settings', label: 'Settings & Security', icon: Settings, badge: null }
-];
-
 export function Sidebar() {
   const pathname = usePathname();
-  const { autoGrowthMode, isGlobalAutomationPaused } = useApp() as any;
+  const { autoGrowthMode, socialAccounts } = useApp() as any;
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
+  useEffect(() => {
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          if (data.user.isMasterAdmin || data.user.role === 'ADMIN' || data.user.role === 'MASTER_ADMIN') {
+            fetch('/api/admin/users?status=PENDING', { cache: 'no-store' })
+              .then(r => r.json())
+              .then(d => {
+                if (d.success && typeof d.pendingApprovalsCount === 'number') {
+                  setPendingCount(d.pendingApprovalsCount);
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const connectedCount = (socialAccounts || []).filter(
+    (a: any) => a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED'
+  ).length;
+
+  const isMasterAdmin = currentUser?.isMasterAdmin || currentUser?.role === 'MASTER_ADMIN' || currentUser?.role === 'ADMIN';
+
+  const baseNavItems = [
+    { href: '/', label: 'Dashboard', icon: LayoutDashboard, badge: null },
+    { href: '/social-accounts', label: 'Social Accounts', icon: Share2, badge: `${connectedCount}/4` },
+    { href: '/growth-score', label: 'AI Growth Score', icon: Sparkles, badge: '85' },
+    { href: '/content-studio', label: 'Content Studio', icon: PenTool, badge: 'AI' },
+    { href: '/calendar', label: 'Content Calendar', icon: CalendarDays, badge: '6' },
+    { href: '/analytics', label: 'Analytics & Growth', icon: BarChart3, badge: null },
+    { href: '/ideas', label: 'Daily Ideas & Radar', icon: Flame, badge: '10' },
+    { href: '/competitors', label: 'Competitors', icon: Radar, badge: null },
+    { href: '/campaigns', label: 'Ad Campaigns', icon: Megaphone, badge: null },
+    { href: '/leads', label: 'Lead Center', icon: Users2, badge: '24' },
+    { href: '/reports', label: 'Weekly AI Reports', icon: FileText, badge: 'New' },
+    { href: '/automation', label: 'Automation Center', icon: Bot, badge: 'Active' },
+    ...(isMasterAdmin ? [{ 
+      href: '/admin', 
+      label: 'Admin Control Center', 
+      icon: ShieldCheck, 
+      badge: pendingCount > 0 ? `${pendingCount} Pending` : 'Admin' 
+    }] : []),
+    { href: '/settings', label: 'Settings & Security', icon: Settings, badge: null }
+  ];
 
   return (
     <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 flex-col shrink-0 min-h-screen select-none">
@@ -75,7 +110,7 @@ export function Sidebar() {
 
       {/* Main Navigation List */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
-        {NAV_ITEMS.map((item) => {
+        {baseNavItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           const Icon = item.icon;
 
@@ -98,7 +133,9 @@ export function Sidebar() {
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     isActive
                       ? 'bg-white/20 text-white'
-                      : item.badge === 'AI' || item.badge === 'New'
+                      : item.badge.includes('Pending')
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+                      : item.badge === 'AI' || item.badge === 'New' || item.badge === 'Admin'
                       ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                       : 'bg-slate-800 text-slate-300 border border-slate-700'
                   }`}
@@ -122,7 +159,7 @@ export function Sidebar() {
             <span className="bg-indigo-500/20 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold">v2.4</span>
           </div>
           <p className="text-slate-400 text-[11px] leading-relaxed mb-3">
-            Connected to Meta, LinkedIn & TikTok Official APIs. Zero bots. 100% genuine audience growth.
+            Connected to Meta, LinkedIn &amp; TikTok Official APIs. Zero bots. 100% genuine audience growth.
           </p>
           <Link
             href="/content-studio?mode=real-estate"
