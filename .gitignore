@@ -2,10 +2,24 @@
 
 # Environment Variables & Secret Vaults (CRITICAL: NEVER COMMIT)
 .env
+.env.*
+!.env.example
 .env*.local
 .env.production
 .env.staging
 .env.test
+
+# Android Signing & Private Keystore Files (CRITICAL: NEVER COMMIT)
+*.jks
+*.keystore
+key.properties
+android/key.properties
+local.properties
+android/local.properties
+*.pem
+*.key
+*.p12
+*.pfx
 
 # SQLite Database Files
 *.db
@@ -45,7 +59,6 @@ release/
 android/app/build/
 android/.gradle/
 android/build/
-android/local.properties
 android/app/src/main/assets/public/
 *.apk
 *.aab
