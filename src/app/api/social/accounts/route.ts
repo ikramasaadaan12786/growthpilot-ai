@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { INITIAL_SOCIAL_ACCOUNTS, INITIAL_PLATFORM_METRICS, DEMO_BENCHMARK_ACCOUNTS, DEMO_BENCHMARK_METRICS } from '@/lib/mock-data';
+import { DEMO_BENCHMARK_ACCOUNTS, DEMO_BENCHMARK_METRICS } from '@/lib/mock-data';
 import { aggregateConnectedAccountsMetrics } from '@/lib/growth-engine';
 import { getAuthenticatedUser } from '@/lib/auth-session';
 import { prisma } from '@/lib/db';
@@ -12,26 +12,42 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const mode = searchParams.get('mode');
 
+    // Authenticate user to enforce multi-tenant isolation
+    const { user } = await getAuthenticatedUser(req);
+
+    // Strict authentication requirement for social account retrieval
+    if (!user) {
+      if (mode === 'demo') {
+        // Isolated static demo presentation
+        return NextResponse.json({
+          success: true,
+          mode: 'DEMO',
+          accounts: DEMO_BENCHMARK_ACCOUNTS,
+          metrics: DEMO_BENCHMARK_METRICS
+        });
+      }
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Authentication required. Please log in.',
+          code: 'UNAUTHORIZED'
+        },
+        { 
+          status: 401,
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate',
+            'Pragma': 'no-cache'
+          }
+        }
+      );
+    }
+
     if (mode === 'demo') {
       return NextResponse.json({
         success: true,
         mode: 'DEMO',
         accounts: DEMO_BENCHMARK_ACCOUNTS,
         metrics: DEMO_BENCHMARK_METRICS
-      });
-    }
-
-    // Authenticate user to enforce multi-tenant isolation
-    const { user } = await getAuthenticatedUser(req);
-
-    // If no user is logged in, return clean unauthenticated/empty connected state
-    if (!user) {
-      return NextResponse.json({
-        success: true,
-        mode: 'LIVE',
-        authenticated: false,
-        accounts: INITIAL_SOCIAL_ACCOUNTS,
-        metrics: INITIAL_PLATFORM_METRICS
       });
     }
 
@@ -58,43 +74,42 @@ export async function GET(req: NextRequest) {
 
         return {
           id: match.id,
-          platform,
+          platform: match.platform as SocialPlatform,
           accountId: match.accountId,
-          accountName: match.accountName || `${platform} Official Account`,
-          username: match.username || `@${platform.toLowerCase()}_user`,
-          avatarUrl: match.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          followerCount: match.followerCount || 0,
-          followingCount: match.followingCount || 0,
-          postCount: match.postCount || 0,
-          growthScore: match.followerCount > 0 ? Math.min(99, Math.round(75 + Math.log10(match.followerCount) * 4)) : 0,
-          growthPercentage: match.followerCount > 0 ? 8.4 : 0,
-          status: isExpired ? 'TOKEN_EXPIRED' : 'REAL_CONNECTED',
-          lastSyncAt: match.lastSyncAt ? new Date(match.lastSyncAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never',
-          dataSource: 'Official OAuth 2.0 API',
+          accountName: match.accountName || `${match.platform} Account`,
+          username: match.username || 'connected_account',
+          avatarUrl: match.avatarUrl || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
+          status: isExpired ? 'TOKEN_EXPIRED' : 'CONNECTED',
+          followerCount: match.followerCount,
+          followingCount: match.followingCount,
+          postCount: match.postCount,
+          growthScore: isExpired ? 40 : 95,
+          growthPercentage: 12.4,
+          lastSyncAt: match.lastSyncAt ? match.lastSyncAt.toISOString() : new Date().toISOString(),
+          dataSource: match.dataSource || 'Official OAuth 2.0 API',
           officialScopes: token.scopes ? token.scopes.split(',') : [],
-          rateLimitUsage: { used: 12, total: 500 },
+          rateLimitUsage: { used: 12, total: 200 },
           isRealOAuth: true
         };
       }
 
-      // Not connected
       return {
-        id: `account-${platform.toLowerCase()}`,
+        id: `empty_${platform.toLowerCase()}`,
         platform,
         accountId: '',
-        accountName: `Official ${platform}`,
-        username: 'Not Connected',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        accountName: `Connect ${platform}`,
+        username: `not_connected`,
+        avatarUrl: `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150`,
+        status: 'NOT_CONNECTED',
         followerCount: 0,
         followingCount: 0,
         postCount: 0,
         growthScore: 0,
         growthPercentage: 0,
-        status: 'NOT_CONNECTED',
         lastSyncAt: 'Never',
-        dataSource: 'OAuth Required',
+        dataSource: 'Not Connected',
         officialScopes: [],
-        rateLimitUsage: { used: 0, total: 500 },
+        rateLimitUsage: { used: 0, total: 200 },
         isRealOAuth: false
       };
     });
@@ -105,23 +120,19 @@ export async function GET(req: NextRequest) {
       success: true,
       mode: 'LIVE',
       authenticated: true,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        plan: user.subscription?.plan || 'PRO'
-      },
       accounts,
       metrics
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'Pragma': 'no-cache'
+      }
     });
   } catch (error: any) {
     console.error('Error fetching social accounts:', error);
-    return NextResponse.json({
-      success: false,
-      error: error.message || 'Database error',
-      accounts: INITIAL_SOCIAL_ACCOUNTS,
-      metrics: INITIAL_PLATFORM_METRICS
-    }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || 'Failed to load social accounts' },
+      { status: 500 }
+    );
   }
 }

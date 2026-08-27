@@ -3,6 +3,9 @@ import { platformRegistry } from '@/lib/integrations/registry';
 import { SocialPlatform } from '@/types';
 import { decryptToken, encryptToken } from '@/lib/crypto';
 import { prisma } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/auth-session';
+
+export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
   return [
@@ -19,16 +22,30 @@ export async function POST(
 ) {
   try {
     const rawPlatform = params.platform.toUpperCase() as SocialPlatform;
+    const { user } = await getAuthenticatedUser(req);
+
+    if (!user) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required to refresh social token.',
+        code: 'UNAUTHORIZED'
+      }, { status: 401 });
+    }
+
     const adapter = platformRegistry.getAdapter(rawPlatform);
 
     const socialAccount = await prisma.socialAccount.findFirst({
-      where: { platform: rawPlatform, status: 'CONNECTED' },
+      where: { 
+        userId: user.id,
+        platform: rawPlatform, 
+        status: 'CONNECTED' 
+      },
       include: { oauthTokens: true }
     });
 
     if (!socialAccount || socialAccount.oauthTokens.length === 0) {
       return NextResponse.json({ 
-        success: false,
+        success: false, 
         error: 'No active OAuth connection found. Please connect your account first.' 
       }, { status: 404 });
     }
@@ -66,56 +83,48 @@ export async function POST(
           }
         });
       }
-    } catch (refreshErr) {
-      console.warn(`Token refresh warning for ${rawPlatform}, falling back to current access token:`, refreshErr);
+    } catch (refreshErr: any) {
+      console.warn(`[OAuth Refresh] Token auto-refresh failed for ${rawPlatform}:`, refreshErr.message);
     }
 
-    // Retrieve fresh profile and metrics from official API
-    const profile = await adapter.getProfile(activeToken);
-    const syncTime = new Date();
+    // Verify token validity with profile lookup
+    try {
+      const profile = await adapter.getProfile(activeToken);
+      await prisma.socialAccount.update({
+        where: { id: socialAccount.id },
+        data: {
+          followerCount: profile.followersCount || socialAccount.followerCount,
+          followingCount: profile.followingCount || socialAccount.followingCount,
+          postCount: profile.postsCount || socialAccount.postCount,
+          lastSyncAt: new Date(),
+          status: 'CONNECTED'
+        }
+      });
 
-    await prisma.socialAccount.update({
-      where: { id: socialAccount.id },
-      data: {
-        accountName: profile.displayName,
-        username: profile.username,
-        avatarUrl: profile.avatarUrl,
-        followerCount: profile.followersCount,
-        followingCount: profile.followingCount,
-        postCount: profile.postsCount,
-        lastSyncAt: syncTime,
-        status: 'CONNECTED'
-      }
-    });
+      return NextResponse.json({
+        success: true,
+        platform: rawPlatform,
+        status: 'ACTIVE',
+        account: {
+          username: profile.username,
+          displayName: profile.displayName,
+          followers: profile.followersCount
+        }
+      });
+    } catch (profileErr: any) {
+      await prisma.socialAccount.update({
+        where: { id: socialAccount.id },
+        data: { status: 'TOKEN_EXPIRED' }
+      });
 
-    await prisma.auditLog.create({
-      data: {
-        action: 'METRICS_REFRESH',
-        details: `Official ${rawPlatform} metrics synchronized: ${profile.followersCount} followers.`,
-        ipAddress: '127.0.0.1',
-        userAgent: 'GrowthPilot Client'
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: `${rawPlatform} live data refreshed successfully`,
-      lastSyncAt: syncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      profile: {
-        displayName: profile.displayName,
-        username: profile.username,
-        followersCount: profile.followersCount,
-        followingCount: profile.followingCount,
-        postsCount: profile.postsCount,
-        avatarUrl: profile.avatarUrl
-      }
-    });
+      return NextResponse.json({
+        success: false,
+        status: 'TOKEN_EXPIRED',
+        error: `OAuth session has expired on ${rawPlatform}. Please reconnect via OAuth.`
+      }, { status: 401 });
+    }
   } catch (error: any) {
-    console.error('Token refresh error:', error);
-    return NextResponse.json({ 
-      success: false,
-      error: error.message || 'Refresh failed' 
-    }, { status: 500 });
+    console.error('Error refreshing token:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-

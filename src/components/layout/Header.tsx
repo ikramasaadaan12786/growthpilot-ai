@@ -85,13 +85,22 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setCurrentUser(null);
-      setShowUserMenu(false);
-      window.location.href = '/login';
-    } catch {
-      window.location.href = '/login';
-    }
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Pragma': 'no-cache', 'Cache-Control': 'no-cache' }
+      });
+    } catch {}
+
+    try {
+      localStorage.removeItem('growthpilot_meta_review_session');
+      localStorage.removeItem('growthpilot_meta_oauth_event');
+      sessionStorage.clear();
+    } catch {}
+
+    setCurrentUser(null);
+    setShowUserMenu(false);
+    window.location.replace('/login');
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;

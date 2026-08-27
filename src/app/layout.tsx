@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { PaddleScript } from "@/components/common/PaddleScript";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 export const metadata: Metadata = {
   title: "GrowthPilot AI | Multi-Platform AI Social Media Growth & Marketing Engine",
@@ -29,19 +30,21 @@ export default function RootLayout({
       <body className="bg-[#0b0f19] text-slate-100 min-h-screen flex antialiased">
         <PaddleScript />
         <AppProvider>
-          <div className="flex w-full min-h-screen">
-            {/* Left Navigation Sidebar */}
-            <Sidebar />
+          <AuthGuard>
+            <div className="flex w-full min-h-screen">
+              {/* Left Navigation Sidebar */}
+              <Sidebar />
 
-            {/* Right Main Content Area */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-              <Header />
-              <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden max-w-7xl w-full mx-auto space-y-6 sm:space-y-8">
-                {children}
-              </main>
-              <Footer />
+              {/* Right Main Content Area */}
+              <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+                <Header />
+                <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden max-w-7xl w-full mx-auto space-y-6 sm:space-y-8">
+                  {children}
+                </main>
+                <Footer />
+              </div>
             </div>
-          </div>
+          </AuthGuard>
         </AppProvider>
       </body>
     </html>

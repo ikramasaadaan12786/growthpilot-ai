@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIService } from '@/lib/ai/ai-service';
+import { getAuthenticatedUser } from '@/lib/auth-session';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { property, language } = body;
+    const { property, language, isDemoMode = false } = body;
+
+    const { user } = await getAuthenticatedUser(req);
+    if (!user && !isDemoMode) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Authentication required. Please log in to generate Real Estate campaigns.',
+          code: 'UNAUTHORIZED'
+        },
+        { status: 401 }
+      );
+    }
 
     if (!property || !property.developer || !property.project) {
       return NextResponse.json({ error: 'Valid property specification is required' }, { status: 400 });

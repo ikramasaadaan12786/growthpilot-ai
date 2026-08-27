@@ -5,10 +5,12 @@ import { prisma } from '@/lib/db';
 import { decryptToken } from '@/lib/crypto';
 import { getAuthenticatedUser } from '@/lib/auth-session';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { platform, payload, isDemoMode = true } = body;
+    const { platform, payload, isDemoMode = false } = body;
 
     if (!platform || !payload) {
       return NextResponse.json({ error: 'Platform and payload are required' }, { status: 400 });
@@ -17,21 +19,27 @@ export async function POST(req: NextRequest) {
     const rawPlatform = (platform as string).toUpperCase() as SocialPlatform;
     const adapter = platformRegistry.getAdapter(rawPlatform);
 
-    // If Demo Mode or requested with demo token
+    // If Demo Mode: isolated simulation only
     if (isDemoMode) {
       const demoResult = await adapter.publishContent(`demo_${rawPlatform.toLowerCase()}_token`, 'demo_account', payload);
       return NextResponse.json({ success: true, result: demoResult });
     }
 
-    // Live Mode: Lookup connected account in database for authenticated user
+    // Live Mode: Strictly require authenticated user
     const { user } = await getAuthenticatedUser(req);
-    const targetUserId = user ? user.id : undefined;
+    if (!user) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required to publish live content.',
+        code: 'UNAUTHORIZED'
+      }, { status: 401 });
+    }
 
     const socialAccount = await prisma.socialAccount.findFirst({
       where: { 
+        userId: user.id,
         platform: rawPlatform, 
-        status: 'CONNECTED',
-        ...(targetUserId ? { userId: targetUserId } : {})
+        status: 'CONNECTED'
       },
       include: { oauthTokens: true }
     });
@@ -55,33 +63,20 @@ export async function POST(req: NextRequest) {
 
     const result = await adapter.publishContent(decryptedAccessToken, socialAccount.accountId, payload);
 
-    // Record audit log
+    // Record audit log strictly for this user
     await prisma.auditLog.create({
       data: {
-        userId: socialAccount.userId,
-        action: 'POST_PUBLISH',
-        details: `Published ${payload.contentType} to ${rawPlatform} account @${socialAccount.username}. Status: ${result.status}`,
+        userId: user.id,
+        action: 'SOCIAL_PUBLISH',
+        details: `Published post to ${rawPlatform} account @${socialAccount.username}`,
         ipAddress: req.ip || '127.0.0.1',
-        userAgent: req.headers.get('user-agent') || 'GrowthPilot Engine'
+        userAgent: req.headers.get('user-agent') || 'GrowthPilot App'
       }
     });
 
-    return NextResponse.json({ 
-      success: result.success, 
-      result,
-      error: !result.success ? (result.errorMessage || 'Publishing operation failed') : undefined 
-    });
+    return NextResponse.json({ success: true, result });
   } catch (error: any) {
-    console.error('API /api/social/publish error:', error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message || 'Internal Server Error',
-      result: {
-        success: false,
-        status: 'FAILED',
-        errorMessage: error.message || 'Internal Server Error'
-      }
-    }, { status: 500 });
+    console.error('Publish API error:', error);
+    return NextResponse.json({ success: false, error: error.message || 'Publishing failed' }, { status: 500 });
   }
 }
-

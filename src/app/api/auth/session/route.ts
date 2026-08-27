@@ -8,20 +8,46 @@ export async function GET(req: NextRequest) {
     const { user } = await getAuthenticatedUser(req);
 
     if (!user) {
-      return NextResponse.json({
-        authenticated: false,
-        user: null
-      });
+      return NextResponse.json(
+        {
+          authenticated: false,
+          user: null
+        },
+        {
+          headers: {
+            'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        }
+      );
     }
 
-    return NextResponse.json({
-      authenticated: true,
-      user
-    });
+    return NextResponse.json(
+      {
+        authenticated: true,
+        user
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
+      }
+    );
   } catch (error: any) {
-    return NextResponse.json({
-      authenticated: false,
-      error: error.message
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        authenticated: false,
+        error: error.message
+      },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate'
+        }
+      }
+    );
   }
 }

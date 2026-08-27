@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { platformRegistry } from '@/lib/integrations/registry';
 import { SocialPlatform } from '@/types';
+import { getAuthenticatedUser } from '@/lib/auth-session';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
+
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.ENCRYPTION_KEY || 'growthpilot_super_secret_jwt_key_2026_growth_lead_ai';
 
 function generateCodeVerifier(): string {
   return crypto.randomBytes(48).toString('base64url');
@@ -18,6 +21,17 @@ export async function GET(
   { params }: { params: { platform: string } }
 ) {
   try {
+    // 1. CRITICAL: Authenticated session is mandatory to initiate OAuth
+    const { user } = await getAuthenticatedUser(req);
+    if (!user) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('error', 'auth_required');
+      loginUrl.searchParams.set('redirect', `/social-accounts`);
+      const res = NextResponse.redirect(loginUrl);
+      res.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+      return res;
+    }
+
     const rawPlatform = params.platform.toUpperCase();
     const validPlatforms: SocialPlatform[] = ['INSTAGRAM', 'FACEBOOK', 'LINKEDIN', 'TIKTOK'];
 
@@ -41,13 +55,22 @@ export async function GET(
       codeChallenge = deriveCodeChallenge(codeVerifier);
     }
 
-    // Generate secure anti-CSRF state token encoding platform, client runtime, and crypto nonce
-    const nonce = crypto.randomBytes(8).toString('hex');
-    const state = `${platform}_${clientType}_${Date.now()}_${nonce}`;
+    // Generate secure anti-CSRF state cryptographically bound to authenticated user
+    const stateData = {
+      userId: user.id,
+      platform,
+      clientType,
+      ts: Date.now(),
+      nonce: crypto.randomBytes(8).toString('hex')
+    };
+    const statePayload = Buffer.from(JSON.stringify(stateData)).toString('base64url');
+    const stateSig = crypto.createHmac('sha256', JWT_SECRET).update(statePayload).digest('base64url');
+    const state = `${statePayload}.${stateSig}`;
 
     const authUrl = adapter.getAuthorizationUrl(state, codeChallenge);
 
     const response = NextResponse.redirect(authUrl);
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
 
     // If mobile/desktop PKCE was used, store verifier in httpOnly cookie
     if (platform === 'TIKTOK' && codeVerifier) {

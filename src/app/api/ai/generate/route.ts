@@ -3,10 +3,26 @@ import { AIService } from '@/lib/ai/ai-service';
 import { getAuthenticatedUser } from '@/lib/auth-session';
 import { deductCredits } from '@/lib/credits';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest) {
   try {
     const { user } = await getAuthenticatedUser(req);
-    
+    const body = await req.json();
+    const { topic, goal, tone, language, audience, isDemoMode = false } = body;
+
+    // Strict authentication requirement for live generation
+    if (!user && !isDemoMode) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Authentication required. Please log in to generate content.',
+          code: 'UNAUTHORIZED'
+        },
+        { status: 401 }
+      );
+    }
+
     // If user is authenticated, check and deduct 1 credit
     let remainingCredits: number | undefined;
     if (user) {
@@ -16,9 +32,6 @@ export async function POST(req: NextRequest) {
       }
       remainingCredits = deduction.remaining;
     }
-
-    const body = await req.json();
-    const { topic, goal, tone, language, audience } = body;
 
     if (!topic) {
       return NextResponse.json({ error: 'Topic is required' }, { status: 400 });

@@ -146,25 +146,12 @@ export async function GET(
     const encryptedAccessToken = encryptToken(tokens.accessToken);
     const encryptedRefreshToken = tokens.refreshToken ? encryptToken(tokens.refreshToken) : null;
 
-    // Determine target user (authenticated user if logged in, or fallback admin user for sandbox review demo)
+    // Determine target user (strictly authenticated user)
     const { user: authUser } = await getAuthenticatedUser(req);
-    let targetUserId: string;
-
-    if (authUser && authUser.id) {
-      targetUserId = authUser.id;
-    } else {
-      const adminUser = await prisma.user.upsert({
-        where: { email: 'team@growthpilot.ai' },
-        update: { role: 'ADMIN' },
-        create: {
-          email: 'team@growthpilot.ai',
-          name: 'GrowthPilot Growth Team',
-          role: 'ADMIN',
-          companyName: 'GrowthPilot Capital & Real Estate'
-        }
-      });
-      targetUserId = adminUser.id;
+    if (!authUser || !authUser.id) {
+      return errorRedirect('UNAUTHENTICATED', 'You must be logged in to GrowthPilot AI to connect social accounts.');
     }
+    const targetUserId: string = authUser.id;
 
     const socialAccount = await prisma.socialAccount.upsert({
       where: {

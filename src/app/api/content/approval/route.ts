@@ -1,8 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { getAuthenticatedUser } from '@/lib/auth-session';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
+    const { user } = await getAuthenticatedUser(req);
+    if (!user) {
+      return NextResponse.json({
+        success: false,
+        error: 'Authentication required. Please log in.',
+        code: 'UNAUTHORIZED'
+      }, { status: 401 });
+    }
+
     const body = await req.json();
     const { postId, approvalStatus, updatedCaption, updatedTitle, scheduledTime } = body;
 
