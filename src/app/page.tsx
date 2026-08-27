@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { 
   Users, 
@@ -14,7 +14,9 @@ import {
   ArrowRight,
   Radio,
   Plus,
-  AlertCircle
+  AlertCircle,
+  ShieldCheck,
+  Clock
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { MetricCard } from '@/components/dashboard/MetricCard';
@@ -26,13 +28,38 @@ import { PlatformBadge } from '@/components/common/PlatformBadge';
 
 export default function DashboardPage() {
   const { platformMetrics, platformFilter, isDemoMode, socialAccounts, isOnline } = useApp();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
+  useEffect(() => {
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.authenticated && data.user) {
+          setCurrentUser(data.user);
+          if (data.user.isMasterAdmin || data.user.role === 'ADMIN' || data.user.role === 'MASTER_ADMIN') {
+            fetch('/api/admin/users?status=PENDING', { cache: 'no-store' })
+              .then(r => r.json())
+              .then(d => {
+                if (d.success && typeof d.pendingApprovalsCount === 'number') {
+                  setPendingCount(d.pendingApprovalsCount);
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const isMasterAdmin = currentUser?.isMasterAdmin || 
+                        currentUser?.role === 'MASTER_ADMIN' || 
+                        currentUser?.role === 'ADMIN' ||
+                        currentUser?.email === 'team@growthpilot.ai' ||
+                        currentUser?.email === 'admin@growthpilot.ai';
 
   const metrics = platformMetrics[platformFilter];
   const connectedCount = socialAccounts.filter(a => a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED').length;
-
-  const isAccConnected = (plat: string) => {
-    return socialAccounts.some(a => a.platform === plat && (a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED'));
-  };
 
   const getFollowerDisplay = (plat: string) => {
     const acc = socialAccounts.find(a => a.platform === plat && (a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED'));
@@ -41,6 +68,36 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Master Admin Quick Command Banner (Visible for Master Admin only) */}
+      {isMasterAdmin && (
+        <div className="p-4 bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 border border-indigo-500/40 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-cyan-300">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                <span>Master Admin Control Center</span>
+                {pendingCount > 0 && (
+                  <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full font-mono animate-pulse">
+                    {pendingCount} Pending Approval{pendingCount > 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              <div className="text-[11px] text-slate-400">Manage tenant accounts, approve new signups, and activate manual payments.</div>
+            </div>
+          </div>
+
+          <Link
+            href="/admin"
+            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 shadow-md shadow-indigo-600/20"
+          >
+            <span>Open Admin Control Center</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
+
       {/* Offline Live Mode Alert */}
       {!isDemoMode && !isOnline && (
         <div className="bg-rose-950/60 border border-rose-500/40 p-4 rounded-2xl flex items-center gap-3 text-xs">
@@ -54,7 +111,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* No Connected Accounts Useful Empty State (Task 7 Requirement) */}
+      {/* No Connected Accounts Useful Empty State */}
       {!isDemoMode && connectedCount === 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-card space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
@@ -168,107 +225,54 @@ export default function DashboardPage() {
           title="Total Reach"
           value={metrics.reach.toLocaleString()}
           changePercentage={metrics.reach > 0 ? 18.4 : 0}
-          icon={Share2}
-          iconColor="text-pink-400"
-          breakdown={
-            platformFilter === 'ALL'
-              ? {
-                  instagram: isDemoMode ? '184.5k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
-                  facebook: isDemoMode ? '98.2k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
-                  linkedin: isDemoMode ? '124.1k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
-                  tiktok: isDemoMode ? '236.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
-                }
-              : undefined
-          }
+          icon={Eye}
+          iconColor="text-cyan-400"
         />
 
         <MetricCard
-          title="Total Video Views"
-          value={metrics.views.toLocaleString()}
-          changePercentage={metrics.views > 0 ? 24.1 : 0}
-          icon={Eye}
-          iconColor="text-cyan-400"
-          breakdown={
-            platformFilter === 'ALL'
-              ? {
-                  instagram: isDemoMode ? '312.0k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
-                  facebook: isDemoMode ? '142.0k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
-                  linkedin: isDemoMode ? '198.5k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
-                  tiktok: isDemoMode ? '632.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
-                }
-              : undefined
-          }
+          title="Engagement Rate"
+          value={`${metrics.engagementRate}%`}
+          changePercentage={metrics.engagementRate > 0 ? 3.8 : 0}
+          icon={Flame}
+          iconColor="text-amber-400"
         />
 
         <MetricCard
           title="Total Engagement"
           value={metrics.engagement.toLocaleString()}
-          changePercentage={metrics.engagement > 0 ? 9.2 : 0}
-          icon={Flame}
-          iconColor="text-amber-400"
-          breakdown={
-            platformFilter === 'ALL'
-              ? {
-                  instagram: isDemoMode ? '29.8k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
-                  facebook: isDemoMode ? '11.2k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
-                  linkedin: isDemoMode ? '21.4k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
-                  tiktok: isDemoMode ? '36.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
-                }
-              : undefined
-          }
+          changePercentage={metrics.engagement > 0 ? 14.2 : 0}
+          icon={Share2}
+          iconColor="text-emerald-400"
         />
 
         <MetricCard
-          title="Total Profile Visits"
+          title="Profile Visits"
           value={metrics.profileVisits.toLocaleString()}
-          changePercentage={metrics.profileVisits > 0 ? 12.8 : 0}
+          changePercentage={metrics.profileVisits > 0 ? 22.1 : 0}
           icon={MousePointer}
           iconColor="text-purple-400"
-          breakdown={
-            platformFilter === 'ALL'
-              ? {
-                  instagram: isDemoMode ? '11.4k' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
-                  facebook: isDemoMode ? '4.8k' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
-                  linkedin: isDemoMode ? '7.9k' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
-                  tiktok: isDemoMode ? '10.0k' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
-                }
-              : undefined
-          }
         />
 
         <MetricCard
-          title="Total Inbound Leads"
+          title="Qualified CRM Leads"
           value={metrics.leadsGenerated.toLocaleString()}
-          changePercentage={metrics.leadsGenerated > 0 ? 31.5 : 0}
+          changePercentage={metrics.leadsGenerated > 0 ? 9.5 : 0}
           icon={UserCheck}
-          iconColor="text-emerald-400"
-          breakdown={
-            platformFilter === 'ALL'
-              ? {
-                  instagram: isDemoMode ? '54' : (isAccConnected('INSTAGRAM') ? 'Live Synced' : 'Not Connected'),
-                  facebook: isDemoMode ? '32' : (isAccConnected('FACEBOOK') ? 'Live Synced' : 'Not Connected'),
-                  linkedin: isDemoMode ? '94' : (isAccConnected('LINKEDIN') ? 'Live Synced' : 'Not Connected'),
-                  tiktok: isDemoMode ? '38' : (isAccConnected('TIKTOK') ? 'Live Synced' : 'Not Connected')
-                }
-              : undefined
-          }
+          iconColor="text-pink-400"
         />
       </div>
 
-      {/* Trajectory Chart & AI Growth Score Dial */}
+      {/* Main Content Split Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           <FollowerGrowthChart />
+          <RecentContentFeed />
         </div>
-        <div>
-          <GrowthScoreCard />
-        </div>
-      </div>
 
-      {/* AI Growth Engine & Recent Top Content Feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AIGrowthEngineCard />
-        <RecentContentFeed />
+        <div className="space-y-6">
+          <GrowthScoreCard />
+          <AIGrowthEngineCard />
+        </div>
       </div>
     </div>
   );

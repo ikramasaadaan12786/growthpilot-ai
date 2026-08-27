@@ -57,8 +57,28 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           });
 
           if (dbUser && !dbUser.isSuspended) {
-            const isOwner = dbUser.email === 'team@growthpilot.ai' || dbUser.email === 'admin@growthpilot.ai';
-            const normalizedRole = isOwner || dbUser.role === 'MASTER_ADMIN' ? 'MASTER_ADMIN' : dbUser.role;
+            const isOwner = dbUser.email === 'team@growthpilot.ai' || 
+                            dbUser.email === 'admin@growthpilot.ai' || 
+                            dbUser.role === 'MASTER_ADMIN' || 
+                            dbUser.role === 'ADMIN' ||
+                            session.role === 'MASTER_ADMIN' || 
+                            session.role === 'ADMIN' ||
+                            session.email === 'team@growthpilot.ai' || 
+                            session.email === 'admin@growthpilot.ai';
+
+            const normalizedRole = isOwner ? 'MASTER_ADMIN' : (dbUser.role || 'USER');
+
+            // Auto-heal / backfill DB record if owner account role was not MASTER_ADMIN
+            if (isOwner && (dbUser.role !== 'MASTER_ADMIN' || dbUser.approvalStatus !== 'APPROVED')) {
+              try {
+                await prisma.user.update({
+                  where: { id: dbUser.id },
+                  data: { role: 'MASTER_ADMIN', approvalStatus: 'APPROVED' }
+                });
+              } catch {
+                // Non-fatal
+              }
+            }
 
             const entitlement = resolveUserEntitlement({
               ...dbUser,
@@ -92,8 +112,12 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           }
         } catch (dbErr) {
           // If database is temporarily offline or in test environments, trust verified cryptographic JWT claims
-          const isOwner = session.email === 'team@growthpilot.ai' || session.email === 'admin@growthpilot.ai';
-          const normalizedRole = isOwner || session.role === 'MASTER_ADMIN' || session.role === 'ADMIN' ? 'MASTER_ADMIN' : (session.role || 'USER');
+          const isOwner = session.email === 'team@growthpilot.ai' || 
+                          session.email === 'admin@growthpilot.ai' || 
+                          session.role === 'MASTER_ADMIN' || 
+                          session.role === 'ADMIN';
+
+          const normalizedRole = isOwner ? 'MASTER_ADMIN' : (session.role || 'USER');
 
           const fallbackUser = {
             id: session.userId,

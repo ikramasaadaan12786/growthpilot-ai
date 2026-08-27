@@ -20,7 +20,9 @@ import {
   Settings,
   Zap,
   Building2,
-  Clock
+  Clock,
+  Crown,
+  ChevronRight
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 
@@ -55,7 +57,11 @@ export function Sidebar() {
     (a: any) => a.status === 'CONNECTED' || a.status === 'REAL_CONNECTED'
   ).length;
 
-  const isMasterAdmin = currentUser?.isMasterAdmin || currentUser?.role === 'MASTER_ADMIN' || currentUser?.role === 'ADMIN';
+  const isMasterAdmin = currentUser?.isMasterAdmin || 
+                        currentUser?.role === 'MASTER_ADMIN' || 
+                        currentUser?.role === 'ADMIN' ||
+                        currentUser?.email === 'team@growthpilot.ai' ||
+                        currentUser?.email === 'admin@growthpilot.ai';
 
   const baseNavItems = [
     { href: '/', label: 'Dashboard', icon: LayoutDashboard, badge: null },
@@ -70,12 +76,6 @@ export function Sidebar() {
     { href: '/leads', label: 'Lead Center', icon: Users2, badge: '24' },
     { href: '/reports', label: 'Weekly AI Reports', icon: FileText, badge: 'New' },
     { href: '/automation', label: 'Automation Center', icon: Bot, badge: 'Active' },
-    ...(isMasterAdmin ? [{ 
-      href: '/admin', 
-      label: 'Admin Control Center', 
-      icon: ShieldCheck, 
-      badge: pendingCount > 0 ? `${pendingCount} Pending` : 'Admin' 
-    }] : []),
     { href: '/settings', label: 'Settings & Security', icon: Settings, badge: null }
   ];
 
@@ -108,8 +108,42 @@ export function Sidebar() {
         </Link>
       </div>
 
+      {/* Dedicated Prominent Master Admin Center Access (Visible for Master Admin only) */}
+      {isMasterAdmin && (
+        <div className="p-3 border-b border-indigo-500/20 bg-indigo-950/30">
+          <Link
+            href="/admin"
+            className={`flex items-center justify-between p-2.5 rounded-xl border transition-all group ${
+              pathname === '/admin' || pathname.startsWith('/admin/')
+                ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30'
+                : 'bg-slate-950/80 border-indigo-500/40 text-indigo-200 hover:bg-indigo-900/40 hover:border-indigo-400'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-cyan-300">
+                <ShieldCheck className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-xs text-white leading-tight flex items-center gap-1">
+                  <span>Admin Control Center</span>
+                </div>
+                <div className="text-[10px] text-indigo-300 font-medium">Governance &amp; Approvals</div>
+              </div>
+            </div>
+
+            {pendingCount > 0 ? (
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-mono animate-pulse shadow-sm">
+                {pendingCount} Pending
+              </span>
+            ) : (
+              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+            )}
+          </Link>
+        </div>
+      )}
+
       {/* Main Navigation List */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-3 py-3 space-y-1 overflow-y-auto custom-scrollbar">
         {baseNavItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
           const Icon = item.icon;
@@ -133,9 +167,7 @@ export function Sidebar() {
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     isActive
                       ? 'bg-white/20 text-white'
-                      : item.badge.includes('Pending')
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
-                      : item.badge === 'AI' || item.badge === 'New' || item.badge === 'Admin'
+                      : item.badge === 'AI' || item.badge === 'New'
                       ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                       : 'bg-slate-800 text-slate-300 border border-slate-700'
                   }`}
