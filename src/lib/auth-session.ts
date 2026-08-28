@@ -59,13 +59,25 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           if (dbUser && !dbUser.isSuspended) {
             let isMasterAdminUser = dbUser.role === 'MASTER_ADMIN' || dbUser.role === 'ADMIN' || session.role === 'MASTER_ADMIN';
 
-            // If not marked MASTER_ADMIN yet, check if this user is the primary/earliest owner account in the database
+            // Check if this user is the primary/earliest owner account in the database
             if (!isMasterAdminUser) {
               try {
                 const earliestUser = await prisma.user.findFirst({
                   orderBy: { createdAt: 'asc' }
                 });
                 if (earliestUser && earliestUser.id === dbUser.id) {
+                  isMasterAdminUser = true;
+                }
+              } catch {}
+            }
+
+            // If no MASTER_ADMIN exists in the database, promote current user to MASTER_ADMIN
+            if (!isMasterAdminUser) {
+              try {
+                const adminCount = await prisma.user.count({
+                  where: { role: 'MASTER_ADMIN' }
+                });
+                if (adminCount === 0) {
                   isMasterAdminUser = true;
                 }
               } catch {}

@@ -87,6 +87,17 @@ export async function POST(req: NextRequest) {
       } catch {}
     }
 
+    if (!isMasterAdminUser) {
+      try {
+        const adminCount = await prisma.user.count({
+          where: { role: 'MASTER_ADMIN' }
+        });
+        if (adminCount === 0) {
+          isMasterAdminUser = true;
+        }
+      } catch {}
+    }
+
     const normalizedRole = isMasterAdminUser ? 'MASTER_ADMIN' : (user.role || 'USER');
 
     // Auto-heal DB record if owner account was not MASTER_ADMIN
