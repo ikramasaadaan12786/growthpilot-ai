@@ -23,22 +23,23 @@ export default function RootLayout({
   const verificationToken = process.env.TIKTOK_VERIFICATION_TOKEN || process.env.TIKTOK_SITE_VERIFICATION || process.env.NEXT_PUBLIC_TIKTOK_VERIFICATION_TOKEN || '4Y8GRLOuyJat8Xcl2RC0JqaTqMX3dNsP';
 
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark h-full">
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
         <meta name="tiktok-developers-site-verification" content={verificationToken} />
       </head>
-      <body className="bg-[#0b0f19] text-slate-100 min-h-screen flex antialiased">
+      <body className="bg-[#0b0f19] text-slate-100 min-h-screen flex antialiased w-full max-w-full overflow-x-hidden">
         <PaddleScript />
         <AppProvider>
           <AuthGuard>
-            <div className="flex w-full min-h-screen">
+            <div className="flex w-full min-h-screen max-w-full overflow-x-hidden">
               {/* Left Navigation Sidebar */}
               <Sidebar />
 
               {/* Right Main Content Area */}
-              <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+              <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full max-w-full overflow-x-hidden">
                 <Header />
-                <main className="flex-1 p-3.5 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden max-w-7xl w-full mx-auto space-y-6 sm:space-y-8">
+                <main className="flex-1 w-full max-w-7xl mx-auto p-3 sm:p-5 md:p-6 lg:p-8 space-y-6 sm:space-y-8 min-w-0">
                   {children}
                 </main>
                 <Footer />

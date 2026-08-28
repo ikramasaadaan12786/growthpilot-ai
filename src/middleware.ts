@@ -96,8 +96,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/billing/webhook',
   '/api/tiktok-verification',
   '/api/tiktok-sandbox-diagnostics',
-  '/api/tiktok-sandbox-status',
-  '/api/admin/diagnostics'
+  '/api/tiktok-sandbox-status'
 ];
 
 export async function middleware(req: NextRequest) {

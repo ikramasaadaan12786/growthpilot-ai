@@ -1,23 +1,23 @@
 'use client';
 
 import React from 'react';
-import { PlatformFilterType, SocialPlatform } from '@/types';
+import { PlatformFilterType } from '@/types';
 import { useApp } from '@/lib/store';
 import { PlatformIcon } from '../common/PlatformIcon';
 
-const PLATFORMS: { id: PlatformFilterType; label: string }[] = [
-  { id: 'ALL', label: 'All Platforms' },
-  { id: 'INSTAGRAM', label: 'Instagram' },
-  { id: 'FACEBOOK', label: 'Facebook' },
-  { id: 'LINKEDIN', label: 'LinkedIn' },
-  { id: 'TIKTOK', label: 'TikTok' }
+const PLATFORMS: { id: PlatformFilterType; label: string; short: string }[] = [
+  { id: 'ALL', label: 'All Platforms', short: 'All' },
+  { id: 'INSTAGRAM', label: 'Instagram', short: 'IG' },
+  { id: 'FACEBOOK', label: 'Facebook', short: 'FB' },
+  { id: 'LINKEDIN', label: 'LinkedIn', short: 'IN' },
+  { id: 'TIKTOK', label: 'TikTok', short: 'TT' }
 ];
 
 export function PlatformFilter() {
   const { platformFilter, setPlatformFilter } = useApp();
 
   return (
-    <div className="inline-flex items-center bg-slate-900/90 p-0.5 sm:p-1 rounded-xl border border-slate-800 shadow-inner shrink-0">
+    <div className="inline-flex items-center bg-slate-900/90 p-0.5 sm:p-1 rounded-xl border border-slate-800 shadow-inner max-w-full overflow-x-auto custom-scrollbar shrink min-w-0">
       {PLATFORMS.map((p) => {
         const isSelected = platformFilter === p.id;
         return (
@@ -25,15 +25,16 @@ export function PlatformFilter() {
             key={p.id}
             onClick={() => setPlatformFilter(p.id)}
             title={p.label}
-            className={`flex items-center gap-1.5 px-2 py-1.5 sm:px-2.5 md:px-3.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-lg text-xs font-semibold transition-all shrink-0 cursor-pointer ${
               isSelected
-                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/30 scale-[1.02]'
+                ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white shadow-md shadow-indigo-600/30'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <PlatformIcon platform={p.id} size={14} />
-            <span className="hidden md:inline">{p.label}</span>
-            {p.id === 'ALL' && <span className="inline md:hidden text-[11px]">All</span>}
+            <PlatformIcon platform={p.id} size={13} />
+            <span className="hidden 2xl:inline">{p.label}</span>
+            <span className="hidden sm:inline 2xl:hidden">{p.short}</span>
+            {p.id === 'ALL' && <span className="inline sm:hidden text-[10px]">All</span>}
           </button>
         );
       })}

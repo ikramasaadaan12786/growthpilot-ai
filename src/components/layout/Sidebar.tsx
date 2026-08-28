@@ -104,7 +104,7 @@ export function Sidebar() {
   ];
 
   return (
-    <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 flex-col shrink-0 min-h-screen select-none">
+    <aside className="hidden md:flex w-64 bg-slate-900 border-r border-slate-800 text-slate-300 flex-col shrink-0 min-h-screen select-none overflow-x-hidden">
       {/* Brand Logo & Tagline */}
       <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 group">

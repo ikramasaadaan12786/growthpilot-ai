@@ -264,7 +264,7 @@ export function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-8 text-slate-200 max-w-7xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 text-slate-200 w-full max-w-full min-w-0">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-950 border border-emerald-500/50 text-emerald-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 text-xs animate-in fade-in">

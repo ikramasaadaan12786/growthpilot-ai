@@ -1,21 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
   Bell, 
   PauseCircle, 
   PlayCircle, 
   Sparkles, 
-  Search, 
   CheckCheck, 
   ChevronDown, 
   Shield, 
-  Layers,
-  Database,
   Radio,
   Eye,
-  Lock,
   Menu,
   X,
   LayoutDashboard,
@@ -31,12 +27,10 @@ import {
   Bot,
   ShieldCheck,
   Settings,
-  Zap,
-  Crown
+  Zap
 } from 'lucide-react';
 import { useApp } from '@/lib/store';
 import { PlatformFilter } from './PlatformFilter';
-import { PlatformBadge } from '../common/PlatformBadge';
 
 export function Header() {
   const { 
@@ -54,6 +48,9 @@ export function Header() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const notifMenuRef = useRef<HTMLDivElement>(null);
+
   const [currentUser, setCurrentUser] = useState<any>(() => {
     if (typeof window !== 'undefined') {
       const cachedRole = localStorage.getItem('growthpilot_cached_role');
@@ -69,7 +66,7 @@ export function Header() {
     return null;
   });
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetch('/api/auth/session', { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
@@ -82,6 +79,20 @@ export function Header() {
         }
       })
       .catch(() => {});
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setShowUserMenu(false);
+      }
+      if (notifMenuRef.current && !notifMenuRef.current.contains(event.target as Node)) {
+        setShowNotifs(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const isMasterAdmin = currentUser?.isMasterAdmin || 
@@ -130,24 +141,24 @@ export function Header() {
   ];
 
   return (
-    <div className="sticky top-0 z-30 flex flex-col">
+    <div className="sticky top-0 z-40 flex flex-col w-full max-w-full">
       {/* Demo Mode Notice Banner */}
       {isDemoMode && (
-        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 text-slate-950 px-4 py-1.5 text-center text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-inner">
+        <div className="bg-gradient-to-r from-amber-600 via-amber-500 to-orange-600 text-slate-950 px-4 py-1 text-center text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 shadow-inner w-full">
           <span className="w-2 h-2 rounded-full bg-slate-950 animate-ping" />
           <span>DEMO DATA — NOT LIVE SOCIAL MEDIA DATA</span>
-          <span className="text-[10px] font-normal lowercase bg-slate-950/20 px-2 py-0.5 rounded-full">
+          <span className="hidden sm:inline text-[10px] font-normal lowercase bg-slate-950/20 px-2 py-0.5 rounded-full">
             (Switch to Live Mode for real OAuth accounts)
           </span>
         </div>
       )}
 
-      <header className="h-16 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 px-2 sm:px-4 md:px-6 flex items-center justify-between gap-1.5 sm:gap-3">
-        {/* Left: Mobile Toggle & Platform Filter */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0 min-w-0">
+      <header className="h-16 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-3 sm:px-4 md:px-6 flex items-center justify-between gap-2 w-full max-w-full min-w-0">
+        {/* Left: Mobile Toggle & Responsive Platform Filter */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 focus:outline-none shrink-0 cursor-pointer"
+            className="md:hidden p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 focus:outline-none shrink-0 cursor-pointer"
             aria-label="Toggle Navigation Menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -155,14 +166,14 @@ export function Header() {
           <PlatformFilter />
         </div>
 
-        {/* Right: Mode Switcher, Actions, Automation Stop & User Profile */}
-        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+        {/* Right: Actions, Quick Admin Pill, Mode Switcher, & Profile Trigger */}
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto">
           
-          {/* Master Admin Direct Quick Pill */}
+          {/* Master Admin Direct Quick Pill (Hidden on narrow desktop to avoid crowding) */}
           {isMasterAdmin && (
             <Link
               href="/admin"
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 hover:text-white rounded-xl text-xs font-bold transition-all shadow-sm group"
+              className="hidden 2xl:flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/80 hover:bg-indigo-900 border border-indigo-500/40 text-indigo-200 hover:text-white rounded-xl text-xs font-bold transition-all shadow-sm group"
             >
               <ShieldCheck className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
               <span>Admin Control Center</span>
@@ -170,28 +181,28 @@ export function Header() {
           )}
 
           {/* Demo Mode / Live Mode Switcher */}
-          <div className="inline-flex items-center bg-slate-950 p-0.5 sm:p-1 rounded-xl border border-slate-800 text-xs">
+          <div className="inline-flex items-center bg-slate-950 p-0.5 rounded-xl border border-slate-800 text-xs shrink-0">
             <button
               onClick={() => setIsDemoMode(true)}
-              className={`px-2 sm:px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 isDemoMode
                   ? 'bg-amber-500 text-slate-950 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
-              <span className="text-[11px] sm:text-xs">Demo</span>
+              <span className="text-[10px] sm:text-xs">Demo</span>
             </button>
             <button
               onClick={() => setIsDemoMode(false)}
-              className={`px-2 sm:px-3 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
+              className={`px-2 py-1 rounded-lg font-bold transition-all flex items-center gap-1 cursor-pointer ${
                 !isDemoMode
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Radio className="w-3.5 h-3.5 text-emerald-300 animate-pulse" />
-              <span className="text-[11px] sm:text-xs">Live</span>
+              <span className="text-[10px] sm:text-xs">Live</span>
             </button>
           </div>
 
@@ -199,38 +210,39 @@ export function Header() {
           {automationSettings.globalPaused ? (
             <button
               onClick={resumeAllAutomations}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all shadow-sm shadow-emerald-500/10 cursor-pointer"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
               title="Resume all automations"
             >
               <PlayCircle className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="hidden sm:inline">RESUME ALL</span>
+              <span className="hidden sm:inline">RESUME</span>
             </button>
           ) : (
             <button
               onClick={emergencyPauseAllAutomations}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all shadow-sm shadow-rose-500/10 cursor-pointer"
-              title="Immediately stops all automated posting, AI generation, and scheduled queues"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer shrink-0"
+              title="Pause all active automations"
             >
               <PauseCircle className="w-4 h-4 text-rose-400" />
-              <span className="hidden lg:inline">PAUSE ALL AUTOMATIONS</span>
-              <span className="hidden sm:inline lg:hidden">PAUSE ALL</span>
+              <span className="hidden 2xl:inline">PAUSE ALL AUTOMATIONS</span>
+              <span className="hidden sm:inline 2xl:hidden">PAUSE</span>
             </button>
           )}
 
-          {/* 1-Click AI Studio Quick CTA (hidden on mobile, in drawer) */}
+          {/* 1-Click AI Studio Quick CTA (Visible on wider desktop) */}
           <Link
             href="/content-studio"
-            className="hidden md:flex items-center gap-2 px-3.5 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/30 hover:scale-[1.02] transition-all"
+            className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold text-xs rounded-xl shadow-md shadow-indigo-600/30 hover:scale-[1.02] transition-all shrink-0"
           >
             <Sparkles className="w-3.5 h-3.5 text-cyan-300 fill-current" />
             <span>Create Content</span>
           </Link>
 
-          {/* Notifications Dropdown Toggle */}
-          <div className="relative">
+          {/* Notifications Dropdown */}
+          <div className="relative shrink-0" ref={notifMenuRef}>
             <button
               onClick={() => setShowNotifs(!showNotifs)}
               className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors relative cursor-pointer"
+              aria-label="Notifications"
             >
               <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
@@ -238,9 +250,9 @@ export function Header() {
               )}
             </button>
 
-            {/* Notifications Flyout Drawer */}
+            {/* Notifications Flyout (Collision-aware right aligned) */}
             {showNotifs && (
-              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 py-3 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 py-3 animate-in fade-in slide-in-from-top-2">
                 <div className="px-4 pb-2.5 border-b border-slate-800 flex items-center justify-between">
                   <div className="font-bold text-sm text-white flex items-center gap-2">
                     <span>Notifications</span>
@@ -285,35 +297,40 @@ export function Header() {
             )}
           </div>
 
-          {/* User Account / Plan Badge */}
-          <div className="relative">
+          {/* User Account / Profile Trigger & Dropdown */}
+          <div className="relative shrink-0" ref={userMenuRef}>
             {currentUser ? (
               <>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
-                  className="flex items-center gap-2 p-1 sm:pl-2 sm:pr-3 sm:py-1 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-xl transition-all cursor-pointer"
+                  className="flex items-center gap-1.5 sm:gap-2 p-1 sm:pl-2 sm:pr-2.5 sm:py-1 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 rounded-xl transition-all cursor-pointer shadow-sm"
+                  aria-label="User Account Menu"
                 >
                   <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-indigo-500 to-cyan-400 text-white font-bold text-xs flex items-center justify-center shadow-inner shrink-0">
                     {currentUser.name ? currentUser.name.substring(0, 2).toUpperCase() : 'GP'}
                   </div>
-                  <div className="text-left hidden sm:block">
-                    <div className="text-xs font-bold text-white leading-tight truncate max-w-[120px]">{currentUser.name}</div>
-                    <div className="text-[10px] text-cyan-400 font-semibold uppercase">
+                  <div className="text-left hidden lg:block max-w-[110px]">
+                    <div className="text-xs font-bold text-white leading-tight truncate">{currentUser.name || 'Account'}</div>
+                    <div className="text-[9px] text-cyan-400 font-semibold uppercase tracking-wider truncate">
                       {isMasterAdmin ? 'MASTER ADMIN' : (currentUser.subscription?.plan || subscriptionPlan)}
                     </div>
                   </div>
-                  <ChevronDown className="w-3 h-3 text-slate-400 ml-0.5 hidden sm:block" />
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                 </button>
 
+                {/* Profile Dropdown: Collision-Aware, Right-Aligned */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-60 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in">
-                    <div className="px-4 py-2 border-b border-slate-800">
-                      <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
-                      <p className="text-[11px] text-slate-400 truncate font-mono">{currentUser.email}</p>
+                  <div className="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 py-2 animate-in fade-in slide-in-from-top-2">
+                    <div className="px-4 py-2.5 border-b border-slate-800 bg-slate-950/40">
+                      <p className="text-xs font-bold text-white truncate">{currentUser.name || 'GrowthPilot User'}</p>
+                      <p className="text-[11px] text-slate-400 truncate font-mono mt-0.5">{currentUser.email}</p>
                       {isMasterAdmin && (
-                        <span className="inline-block mt-1 bg-amber-500/20 text-amber-300 text-[9px] font-bold px-1.5 py-0.2 rounded font-mono border border-amber-500/30">
-                          MASTER ADMIN
-                        </span>
+                        <div className="mt-1.5">
+                          <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full font-mono border border-amber-500/40">
+                            <ShieldCheck className="w-3 h-3 text-amber-400" />
+                            MASTER ADMIN
+                          </span>
+                        </div>
                       )}
                     </div>
 
@@ -321,7 +338,7 @@ export function Header() {
                       <Link
                         href="/admin"
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-cyan-300 hover:text-white hover:bg-indigo-950/80 transition-colors border-b border-slate-800/80"
+                        className="flex items-center gap-2.5 px-4 py-2.5 text-xs font-bold text-cyan-300 hover:text-white hover:bg-indigo-950/80 transition-colors border-b border-slate-800/80"
                       >
                         <ShieldCheck className="w-4 h-4 text-cyan-400" /> 
                         <span>Admin Control Center</span>
@@ -331,17 +348,18 @@ export function Header() {
                     <Link
                       href="/settings"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-2 px-4 py-2 text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
                     >
-                      <Shield className="w-3.5 h-3.5 text-indigo-400" /> Account &amp; Settings
+                      <Shield className="w-3.5 h-3.5 text-indigo-400" /> 
+                      <span>Account &amp; Settings</span>
                     </Link>
 
                     <div className="border-t border-slate-800 my-1" />
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-slate-800 flex items-center gap-2 cursor-pointer transition-colors"
+                      className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:text-rose-300 hover:bg-slate-800 flex items-center gap-2.5 cursor-pointer transition-colors"
                     >
-                      Sign Out
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 )}
@@ -356,7 +374,7 @@ export function Header() {
                 </Link>
                 <Link
                   href="/register"
-                  className="text-xs px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-95 text-white font-bold transition-all shadow-md shadow-indigo-600/20"
+                  className="text-xs px-3 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:opacity-95 text-white font-bold transition-all shadow-md shadow-indigo-600/20"
                 >
                   Get Started
                 </Link>
