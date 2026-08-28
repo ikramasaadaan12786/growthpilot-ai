@@ -46,7 +46,7 @@ export function resolveUserEntitlement(user: any): UserEntitlementResult {
   }
 
   const role = ((user.role || 'USER') as string).toUpperCase() as UserRole;
-  const isMasterAdmin = role === 'MASTER_ADMIN' || role === 'ADMIN' || user.email === 'team@growthpilot.ai' || user.email === 'admin@growthpilot.ai';
+  const isMasterAdmin = role === 'MASTER_ADMIN' || role === 'ADMIN';
 
   // 1. MASTER_ADMIN / ADMIN Authority: full access to normal app + admin console
   if (isMasterAdmin) {

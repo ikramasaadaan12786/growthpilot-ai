@@ -292,10 +292,10 @@ export function AdminDashboard() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Master Admin Control Center</span>
+            <span>Master Admin Governance Plane</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            GrowthPilot AI Governance &amp; Lifecycle Plane
+            ADMIN CONTROL CENTER
           </h1>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl">
             Highest authority control over multi-tenant user approvals, 7-day trials, manual payment activations, platform quotas, and audit trails.

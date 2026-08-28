@@ -94,6 +94,12 @@ export function Sidebar() {
     { href: '/leads', label: 'Lead Center', icon: Users2, badge: '24' },
     { href: '/reports', label: 'Weekly AI Reports', icon: FileText, badge: 'New' },
     { href: '/automation', label: 'Automation Center', icon: Bot, badge: 'Active' },
+    ...(isMasterAdmin ? [{ 
+      href: '/admin', 
+      label: 'Admin Control Center', 
+      icon: ShieldCheck, 
+      badge: pendingCount > 0 ? `${pendingCount} Pending` : 'Admin' 
+    }] : []),
     { href: '/settings', label: 'Settings & Security', icon: Settings, badge: null }
   ];
 
@@ -185,7 +191,9 @@ export function Sidebar() {
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     isActive
                       ? 'bg-white/20 text-white'
-                      : item.badge === 'AI' || item.badge === 'New'
+                      : item.badge.includes('Pending')
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse'
+                      : item.badge === 'AI' || item.badge === 'New' || item.badge === 'Admin'
                       ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                       : 'bg-slate-800 text-slate-300 border border-slate-700'
                   }`}

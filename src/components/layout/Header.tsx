@@ -54,7 +54,20 @@ export function Header() {
   const [showNotifs, setShowNotifs] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(() => {
+    if (typeof window !== 'undefined') {
+      const cachedRole = localStorage.getItem('growthpilot_cached_role');
+      const cachedEmail = localStorage.getItem('growthpilot_cached_email');
+      if (cachedRole) {
+        return {
+          role: cachedRole,
+          email: cachedEmail,
+          isMasterAdmin: cachedRole === 'MASTER_ADMIN' || cachedRole === 'ADMIN'
+        };
+      }
+    }
+    return null;
+  });
 
   React.useEffect(() => {
     fetch('/api/auth/session', { cache: 'no-store' })
@@ -62,6 +75,10 @@ export function Header() {
       .then(data => {
         if (data.authenticated && data.user) {
           setCurrentUser(data.user);
+          try {
+            localStorage.setItem('growthpilot_cached_role', data.user.role || 'USER');
+            localStorage.setItem('growthpilot_cached_email', data.user.email || '');
+          } catch {}
         }
       })
       .catch(() => {});
@@ -69,9 +86,7 @@ export function Header() {
 
   const isMasterAdmin = currentUser?.isMasterAdmin || 
                         currentUser?.role === 'MASTER_ADMIN' || 
-                        currentUser?.role === 'ADMIN' ||
-                        currentUser?.email === 'team@growthpilot.ai' ||
-                        currentUser?.email === 'admin@growthpilot.ai';
+                        currentUser?.role === 'ADMIN';
 
   const handleLogout = async () => {
     try {
@@ -83,6 +98,8 @@ export function Header() {
     } catch {}
 
     try {
+      localStorage.removeItem('growthpilot_cached_role');
+      localStorage.removeItem('growthpilot_cached_email');
       localStorage.removeItem('growthpilot_meta_review_session');
       localStorage.removeItem('growthpilot_meta_oauth_event');
       sessionStorage.clear();
@@ -304,9 +321,10 @@ export function Header() {
                       <Link
                         href="/admin"
                         onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-cyan-300 hover:text-white hover:bg-indigo-950/60 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-cyan-300 hover:text-white hover:bg-indigo-950/80 transition-colors border-b border-slate-800/80"
                       >
-                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Admin Control Center
+                        <ShieldCheck className="w-4 h-4 text-cyan-400" /> 
+                        <span>Admin Control Center</span>
                       </Link>
                     )}
 

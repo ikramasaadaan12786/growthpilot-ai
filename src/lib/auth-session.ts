@@ -28,7 +28,7 @@ export interface AuthenticatedUser {
 
 /**
  * Extracts and verifies the authenticated user from cookies or Authorization header.
- * Enforces strict multi-tenant data isolation for all public SaaS users.
+ * Checks PostgreSQL database to guarantee authoritative, up-to-date role resolution.
  */
 export async function getAuthenticatedUser(req: NextRequest): Promise<{
   user: AuthenticatedUser | null;
@@ -57,23 +57,28 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           });
 
           if (dbUser && !dbUser.isSuspended) {
-            const isOwner = dbUser.email === 'team@growthpilot.ai' || 
-                            dbUser.email === 'admin@growthpilot.ai' || 
-                            dbUser.role === 'MASTER_ADMIN' || 
-                            dbUser.role === 'ADMIN' ||
-                            session.role === 'MASTER_ADMIN' || 
-                            session.role === 'ADMIN' ||
-                            session.email === 'team@growthpilot.ai' || 
-                            session.email === 'admin@growthpilot.ai';
+            let isMasterAdminUser = dbUser.role === 'MASTER_ADMIN' || dbUser.role === 'ADMIN' || session.role === 'MASTER_ADMIN';
 
-            const normalizedRole = isOwner ? 'MASTER_ADMIN' : (dbUser.role || 'USER');
+            // If not marked MASTER_ADMIN yet, check if this user is the primary/earliest owner account in the database
+            if (!isMasterAdminUser) {
+              try {
+                const earliestUser = await prisma.user.findFirst({
+                  orderBy: { createdAt: 'asc' }
+                });
+                if (earliestUser && earliestUser.id === dbUser.id) {
+                  isMasterAdminUser = true;
+                }
+              } catch {}
+            }
 
-            // Auto-heal / backfill DB record if owner account role was not MASTER_ADMIN
-            if (isOwner && (dbUser.role !== 'MASTER_ADMIN' || dbUser.approvalStatus !== 'APPROVED')) {
+            const normalizedRole = isMasterAdminUser ? 'MASTER_ADMIN' : (dbUser.role || 'USER');
+
+            // Auto-heal / backfill DB record in production PostgreSQL if owner was not MASTER_ADMIN
+            if (isMasterAdminUser && (dbUser.role !== 'MASTER_ADMIN' || dbUser.approvalStatus !== 'APPROVED')) {
               try {
                 await prisma.user.update({
                   where: { id: dbUser.id },
-                  data: { role: 'MASTER_ADMIN', approvalStatus: 'APPROVED' }
+                  data: { role: 'MASTER_ADMIN', approvalStatus: 'APPROVED', trialStatus: 'ACTIVE' }
                 });
               } catch {
                 // Non-fatal
@@ -112,12 +117,8 @@ export async function getAuthenticatedUser(req: NextRequest): Promise<{
           }
         } catch (dbErr) {
           // If database is temporarily offline or in test environments, trust verified cryptographic JWT claims
-          const isOwner = session.email === 'team@growthpilot.ai' || 
-                          session.email === 'admin@growthpilot.ai' || 
-                          session.role === 'MASTER_ADMIN' || 
-                          session.role === 'ADMIN';
-
-          const normalizedRole = isOwner ? 'MASTER_ADMIN' : (session.role || 'USER');
+          const isMasterAdminUser = session.role === 'MASTER_ADMIN' || session.role === 'ADMIN';
+          const normalizedRole = isMasterAdminUser ? 'MASTER_ADMIN' : (session.role || 'USER');
 
           const fallbackUser = {
             id: session.userId,

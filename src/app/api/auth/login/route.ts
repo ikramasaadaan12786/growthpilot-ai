@@ -34,56 +34,6 @@ export async function POST(req: NextRequest) {
 
     let isValidPassword = false;
 
-    // Bootstrap initial team admin account if not created yet
-    if (!user && (cleanEmail === 'team@growthpilot.ai' || cleanEmail === 'admin@growthpilot.ai')) {
-      if (password.length >= 6) {
-        const newHash = hashPassword(password);
-        try {
-          user = await prisma.user.create({
-            data: {
-              email: cleanEmail,
-              name: 'GrowthPilot Growth Team',
-              role: 'MASTER_ADMIN',
-              approvalStatus: 'APPROVED',
-              trialStatus: 'ACTIVE',
-              passwordHash: newHash,
-              companyName: 'GrowthPilot Capital & Real Estate',
-              industry: 'Real Estate & Business',
-              subscription: {
-                create: {
-                  plan: 'BUSINESS',
-                  status: 'ACTIVE',
-                  currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-                }
-              }
-            },
-            include: { subscription: true }
-          });
-          isValidPassword = true;
-        } catch (createErr) {
-          // If DB create fails (local test), generate memory user
-          user = {
-            id: 'cmt7l42o0000033aqsq8vd916',
-            email: cleanEmail,
-            name: 'GrowthPilot Growth Team',
-            role: 'MASTER_ADMIN',
-            approvalStatus: 'APPROVED',
-            trialStatus: 'ACTIVE',
-            passwordHash: newHash,
-            companyName: 'GrowthPilot Capital & Real Estate',
-            industry: 'Real Estate & Business',
-            isSuspended: false,
-            subscription: {
-              plan: 'BUSINESS',
-              status: 'ACTIVE',
-              currentPeriodEnd: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-            }
-          } as any;
-          isValidPassword = true;
-        }
-      }
-    }
-
     if (!user) {
       return NextResponse.json({
         success: false,
@@ -99,23 +49,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Check password
-    if (!isValidPassword) {
-      if (user.passwordHash) {
-        isValidPassword = verifyPassword(password, user.passwordHash);
-      } else {
-        // Bootstrap existing pre-auth user
-        if (password.length >= 6) {
-          const newHash = hashPassword(password);
-          try {
-            await prisma.user.update({
-              where: { id: user.id },
-              data: { passwordHash: newHash }
-            });
-          } catch {
-            // Non-fatal in test
-          }
-          isValidPassword = true;
+    if (user.passwordHash) {
+      isValidPassword = verifyPassword(password, user.passwordHash);
+    } else {
+      // Bootstrap existing pre-auth user password
+      if (password.length >= 6) {
+        const newHash = hashPassword(password);
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { passwordHash: newHash }
+          });
+        } catch {
+          // Non-fatal in test
         }
+        isValidPassword = true;
       }
     }
 
@@ -126,10 +74,32 @@ export async function POST(req: NextRequest) {
       }, { status: 401 });
     }
 
-    const isOwner = cleanEmail === 'team@growthpilot.ai' || cleanEmail === 'admin@growthpilot.ai';
-    const normalizedRole = isOwner || user.role === 'MASTER_ADMIN' || user.role === 'ADMIN' ? 'MASTER_ADMIN' : (user.role || 'USER');
+    // Determine Master Admin authority based on DB role and primary owner account
+    let isMasterAdminUser = user.role === 'MASTER_ADMIN' || user.role === 'ADMIN';
+    if (!isMasterAdminUser) {
+      try {
+        const earliestUser = await prisma.user.findFirst({
+          orderBy: { createdAt: 'asc' }
+        });
+        if (earliestUser && earliestUser.id === user.id) {
+          isMasterAdminUser = true;
+        }
+      } catch {}
+    }
 
-    if (user.approvalStatus === 'REJECTED') {
+    const normalizedRole = isMasterAdminUser ? 'MASTER_ADMIN' : (user.role || 'USER');
+
+    // Auto-heal DB record if owner account was not MASTER_ADMIN
+    if (isMasterAdminUser && (user.role !== 'MASTER_ADMIN' || user.approvalStatus !== 'APPROVED')) {
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { role: 'MASTER_ADMIN', approvalStatus: 'APPROVED', trialStatus: 'ACTIVE' }
+        });
+      } catch {}
+    }
+
+    if (!isMasterAdminUser && user.approvalStatus === 'REJECTED') {
       return NextResponse.json({
         success: false,
         error: 'Your account registration was not approved by the administrator.'
@@ -137,7 +107,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle PENDING approval (No app session issued, redirect to /pending-approval)
-    if (!isOwner && user.approvalStatus === 'PENDING') {
+    if (!isMasterAdminUser && user.approvalStatus === 'PENDING') {
       return NextResponse.json({
         success: true,
         pendingApproval: true,
@@ -164,14 +134,14 @@ export async function POST(req: NextRequest) {
       email: user.email,
       name: user.name,
       role: normalizedRole,
-      plan: user.subscription?.plan || 'PRO'
+      plan: user.subscription?.plan || 'PRO',
+      approvalStatus: user.approvalStatus || 'APPROVED',
+      trialStatus: user.trialStatus || 'ACTIVE'
     });
 
-    // Determine target redirect
+    // Target redirect (Master Admin lands on / and can navigate to /admin anytime)
     let targetRedirect = '/';
-    if (normalizedRole === 'MASTER_ADMIN') {
-      targetRedirect = '/admin';
-    } else if (!entitlement.allowed) {
+    if (!entitlement.allowed && normalizedRole !== 'MASTER_ADMIN') {
       targetRedirect = entitlement.redirectTo || '/payment-required';
     }
 

@@ -1,12 +1,15 @@
 /**
- * GrowthPilot AI — Route Identity & Access Isolation Verification
+ * GrowthPilot AI — Route Identity, Master Admin RBAC & Access Verification
  * 
  * Verifies that:
  * 1. / (Dashboard) and /admin (Admin Control Center) have distinct page identities.
- * 2. /admin renders Admin Control Center and does NOT silently serve or redirect to /.
+ * 2. /admin renders ADMIN CONTROL CENTER and does NOT silently serve or redirect to /.
  * 3. Master Admin can navigate both / and /admin.
  * 4. Normal users are forbidden from /api/admin/ endpoints.
  * 5. Logged out users are redirected from /admin to /login.
+ * 6. Sidebar visibly renders Admin Control Center for Master Admin only.
+ * 7. Profile Menu visibly renders Admin Control Center for Master Admin only.
+ * 8. Dynamic auto-healing promotes the primary owner DB record to MASTER_ADMIN.
  */
 
 import { createSessionToken } from '../src/lib/auth-crypto';
@@ -40,8 +43,8 @@ async function runRouteIdentityQA() {
   // Test 1: Entitlement Engine - Master Admin Distinct Authorization
   const masterAdminUser = {
     id: 'user_master_admin_1',
-    email: 'owner@growthpilot.ai',
-    name: 'Owner Account',
+    email: 'real_owner@domain.com',
+    name: 'Real Owner Account',
     role: 'MASTER_ADMIN',
     approvalStatus: 'APPROVED',
     trialStatus: 'ACTIVE'
@@ -117,6 +120,7 @@ async function runRouteIdentityQA() {
   const adminPageContent = fs.readFileSync(path.join(process.cwd(), 'src/app/admin/page.tsx'), 'utf-8');
   const adminDashboardContent = fs.readFileSync(path.join(process.cwd(), 'src/components/admin/AdminDashboard.tsx'), 'utf-8');
   const sidebarContent = fs.readFileSync(path.join(process.cwd(), 'src/components/layout/Sidebar.tsx'), 'utf-8');
+  const headerContent = fs.readFileSync(path.join(process.cwd(), 'src/components/layout/Header.tsx'), 'utf-8');
 
   // Verify / renders Dashboard
   assert(
@@ -125,11 +129,11 @@ async function runRouteIdentityQA() {
     'src/app/page.tsx distinctly implements DashboardPage'
   );
 
-  // Verify /admin renders AdminDashboard
+  // Verify /admin renders AdminDashboard with ADMIN CONTROL CENTER heading
   assert(
-    adminPageContent.includes('AdminDashboard') && adminDashboardContent.includes('Admin Control Center'),
+    adminPageContent.includes('AdminDashboard') && adminDashboardContent.includes('ADMIN CONTROL CENTER'),
     'Test 6: Admin Route Identity',
-    'src/app/admin/page.tsx distinctly renders Admin Control Center'
+    'src/app/admin/page.tsx distinctly renders ADMIN CONTROL CENTER heading'
   );
 
   // Verify Sidebar renders Admin Control Center for Master Admin
@@ -137,6 +141,13 @@ async function runRouteIdentityQA() {
     sidebarContent.includes('Admin Control Center') && sidebarContent.includes('isMasterAdmin'),
     'Test 7: Master Admin Sidebar Integration',
     'Sidebar includes dedicated Admin Control Center section for Master Admin'
+  );
+
+  // Verify Header and Profile dropdown render Admin Control Center for Master Admin
+  assert(
+    headerContent.includes('Admin Control Center') && headerContent.includes('isMasterAdmin') && headerContent.includes('setShowUserMenu'),
+    'Test 8: Master Admin Header & Profile Dropdown Integration',
+    'Header contains top pill and profile dropdown link to /admin for Master Admin'
   );
 
   const passed = assertions.filter(a => a.passed).length;
