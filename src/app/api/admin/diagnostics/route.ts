@@ -15,8 +15,31 @@ export async function GET(req: NextRequest) {
     // 1. Check live database connectivity
     let dbStatus = 'CONNECTED';
     let dbError = null;
-    let usersList: any[] = [];
+    let roleUpdated = false;
 
+    // Promote the real owner account to MASTER_ADMIN in live PostgreSQL
+    try {
+      const ownerRecord = await prisma.user.findUnique({
+        where: { email: 'ikrama.altamash12786@gmail.com' }
+      });
+
+      if (ownerRecord) {
+        await prisma.user.update({
+          where: { email: 'ikrama.altamash12786@gmail.com' },
+          data: {
+            role: 'MASTER_ADMIN',
+            approvalStatus: 'APPROVED',
+            trialStatus: 'ACTIVE',
+            isSuspended: false
+          }
+        });
+        roleUpdated = true;
+      }
+    } catch (e: any) {
+      dbError = e.message;
+    }
+
+    let usersList: any[] = [];
     try {
       usersList = await prisma.user.findMany({
         select: {
@@ -39,41 +62,8 @@ export async function GET(req: NextRequest) {
       dbError = e.message;
     }
 
-    // 2. Identify and auto-promote live owner account
-    let ownerAccount = null;
-    let roleUpdated = false;
-
-    if (usersList.length > 0) {
-      // Find the account with connected social accounts or earliest registration
-      const liveOwner = usersList.find(u => u.role === 'MASTER_ADMIN') || 
-                         usersList.find(u => u._count.socialAccounts > 0) || 
-                         usersList[0];
-
-      if (liveOwner) {
-        ownerAccount = liveOwner;
-        if (liveOwner.role !== 'MASTER_ADMIN' || liveOwner.approvalStatus !== 'APPROVED') {
-          try {
-            await prisma.user.update({
-              where: { id: liveOwner.id },
-              data: {
-                role: 'MASTER_ADMIN',
-                approvalStatus: 'APPROVED',
-                trialStatus: 'ACTIVE',
-                isSuspended: false
-              }
-            });
-            roleUpdated = true;
-            ownerAccount.role = 'MASTER_ADMIN';
-            ownerAccount.approvalStatus = 'APPROVED';
-          } catch (updateErr: any) {
-            console.error('Diagnostic auto-promotion error:', updateErr);
-          }
-        }
-      }
-    }
-
-    // 3. Return sanitized database inspection
     const masterAdmins = usersList.filter(u => u.role === 'MASTER_ADMIN');
+    const liveOwner = usersList.find(u => u.email === 'ikrama.altamash12786@gmail.com');
 
     return NextResponse.json({
       success: true,
@@ -86,12 +76,12 @@ export async function GET(req: NextRequest) {
         approvalStatus: u.approvalStatus,
         createdAt: u.createdAt
       })),
-      liveOwner: ownerAccount ? {
-        email: ownerAccount.email,
-        name: ownerAccount.name,
-        role: ownerAccount.role,
-        approvalStatus: ownerAccount.approvalStatus,
-        socialAccountsCount: ownerAccount._count.socialAccounts,
+      liveOwner: liveOwner ? {
+        email: liveOwner.email,
+        name: liveOwner.name,
+        role: liveOwner.role,
+        approvalStatus: liveOwner.approvalStatus,
+        socialAccountsCount: liveOwner._count.socialAccounts,
         roleUpdated
       } : null,
       allUsersSanitized: usersList.map(u => ({
